@@ -1,102 +1,835 @@
 <!doctype html>
-<html lang="pt">
+<html lang="pt-PT">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Lista de Compras</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lista de compras</title>
+
 <style>
-body{font-family:system-ui,-apple-system,Segoe UI,sans-serif;max-width:720px;margin:auto;padding:18px;background:#f6f6f6;color:#222}
-h1{margin-bottom:4px}.sub{color:#666;margin-top:0}
-.card{background:white;border-radius:16px;padding:16px;margin:12px 0;box-shadow:0 2px 10px #0001}
-.item{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid #eee}
-.item:last-child{border-bottom:0}.name{flex:1}.qty{font-weight:600}
-button,input{font:inherit}button{border:0;border-radius:10px;padding:9px 12px;cursor:pointer}
-.add{background:#222;color:white}.danger{background:#eee}.buy{background:#dff3df}
-input{width:100%;box-sizing:border-box;padding:11px;border:1px solid #ddd;border-radius:10px}
-.empty{color:#777;text-align:center;padding:20px}.small{font-size:.88rem;color:#666}
-.qrs{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
-.qr{border:1px solid #eee;border-radius:12px;padding:12px;text-align:center}
-.qr img{width:130px;height:130px;max-width:100%}
-.actions{display:flex;gap:8px;flex-wrap:wrap}
+body{
+  font-family:Arial,sans-serif;
+  max-width:720px;
+  margin:0 auto;
+  padding:20px;
+  background:#f7f7f7;
+  color:#222
+}
+h1{margin:0 0 8px}
+h2{margin-top:0}
+.muted{color:#666;font-size:14px}
+.card{
+  background:#fff;
+  border-radius:14px;
+  padding:16px;
+  margin:14px 0;
+  box-shadow:0 2px 10px #0001
+}
+button{
+  border:0;
+  border-radius:9px;
+  padding:9px 12px;
+  cursor:pointer;
+  font-size:15px
+}
+.primary{background:#222;color:#fff}
+.danger{background:#eee}
+.small{padding:6px 10px}
+input{
+  padding:10px;
+  border:1px solid #ccc;
+  border-radius:9px;
+  font-size:15px
+}
+.row{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  flex-wrap:wrap
+}
+#loginArea{text-align:center;padding:20px}
+.item{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  padding:11px 0;
+  border-bottom:1px solid #eee
+}
+.item:last-child{border-bottom:0}
+.name{flex:1}
+.qty{
+  min-width:28px;
+  text-align:center;
+  font-weight:bold
+}
+.bought .name{
+  text-decoration:line-through;
+  color:#888
+}
+.product{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  padding:10px 0;
+  border-bottom:1px solid #eee
+}
+.product:last-child{border-bottom:0}
+.qr{
+  width:220px;
+  max-width:100%;
+  display:block;
+  margin:10px auto
+}
+.hidden{display:none}
 </style>
 </head>
+
 <body>
+
 <h1>🛒 Lista de compras</h1>
-<p class="sub">Lê um QR de produto para o acrescentar automaticamente.</p>
+<div id="status" class="muted">A ligar à conta...</div>
 
-<div class="card">
-  <div class="actions">
-    <button class="danger" onclick="clearBought()">Limpar comprados</button>
-    <button class="danger" onclick="clearAll()">Limpar lista</button>
+<div id="loginArea" class="card hidden">
+  <p>Entra com a tua conta Google para usar a mesma lista no PC e no telemóvel.</p>
+  <button id="loginBtn" class="primary">Entrar com Google</button>
+</div>
+
+<div id="app" class="hidden">
+
+  <div class="card">
+    <div class="row" style="justify-content:space-between">
+      <strong id="userName"></strong>
+      <button id="logoutBtn" class="small danger">Sair</button>
+    </div>
   </div>
-</div>
 
-<div class="card">
-  <h2>Lista atual</h2>
-  <div id="list"></div>
-</div>
+  <div class="card">
+    <h2>Lista</h2>
 
-<div class="card">
-  <h2>Adicionar manualmente</h2>
-  <div class="actions">
-    <input id="newItem" placeholder="Ex.: açúcar" onkeydown="if(event.key==='Enter') addManual()">
-    <button class="add" onclick="addManual()">Adicionar</button>
+    <div id="list"></div>
+
+    <p id="empty" class="muted">A lista está vazia.</p>
+
+    <div class="row" style="margin-top:12px">
+      <input id="manualName" placeholder="Adicionar produto manualmente">
+      <button id="manualAdd" class="primary">Adicionar</button>
+    </div>
   </div>
+
+  <div class="card">
+    <h2>Produtos e QR</h2>
+
+    <p class="muted">
+      Cria um produto uma vez. O QR desse produto pode ser impresso
+      e colocado junto ao artigo.
+    </p>
+
+    <div class="row">
+      <input id="productName" placeholder="Ex.: Leite">
+      <button id="createProduct" class="primary">Criar produto</button>
+    </div>
+
+    <div id="products"></div>
+  </div>
+
 </div>
 
-<div class="card">
-  <h2>QR Codes de exemplo</h2>
-  <p class="small">Para testar sem imprimir, toca num QR ou aponta a câmara para ele.</p>
-  <div id="qrs" class="qrs"></div>
-</div>
+<script type="module">
 
-<script>
-const products = ['Leite', 'Café', 'Arroz', 'Ovos', 'Papel higiénico', 'Detergente', 'Ração do gato', 'Azeite'];
-const key="lista_compras_prototipo";
-let list=JSON.parse(localStorage.getItem(key)||"{}");
+import { initializeApp }
+from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
 
-function save(){localStorage.setItem(key,JSON.stringify(list)); render();}
-function add(name){
-  name=name.trim(); if(!name)return;
-  const k=name.toLowerCase();
-  if(!list[k]) list[k]={name,qty:1,bought:false};
-  else list[k].qty++;
-  save();
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut,
+  onAuthStateChanged
 }
-function addManual(){add(document.getElementById("newItem").value);document.getElementById("newItem").value="";}
-function change(k,d){if(!list[k])return;list[k].qty+=d;if(list[k].qty<=0)delete list[k];save();}
-function toggle(k){list[k].bought=!list[k].bought;save();}
-function clearBought(){Object.keys(list).forEach(k=>{if(list[k].bought)delete list[k]});save();}
-function clearAll(){if(confirm("Apagar toda a lista?")){list={};save();}}
+from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 
-function render(){
- const el=document.getElementById("list"), keys=Object.keys(list);
- if(!keys.length){el.innerHTML='<div class="empty">A lista está vazia.</div>';return;}
- el.innerHTML=keys.map(k=>{let x=list[k];return `<div class="item">
-   <input type="checkbox" ${x.bought?'checked':''} onchange="toggle('${esc(k)}')">
-   <span class="name" style="${x.bought?'text-decoration:line-through;color:#888':''}">${esc(x.name)}</span>
-   <button onclick="change('${esc(k)}',-1)">−</button><span class="qty">${x.qty}</span>
-   <button onclick="change('${esc(k)}',1)">+</button>
- </div>`}).join("");
+import {
+  getDatabase,
+  ref,
+  onValue,
+  set,
+  update,
+  remove
 }
-function esc(s){return s.replaceAll("&","&amp;").replaceAll("'","&#39;").replaceAll('"',"&quot;").replaceAll("<","&lt;").replaceAll(">","&gt;");}
+from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
 
-function qrUrl(product){
-  const payload=location.href.split("#")[0]+"#add="+encodeURIComponent(product);
-  return "https://quickchart.io/qr?size=260&text="+encodeURIComponent(payload);
+
+const firebaseConfig = {
+
+  apiKey: "AIzaSyAvRVBBIk9FahPeE3E40wbedAi73e4TLsY",
+
+  authDomain: "lista-compras-crismaio.firebaseapp.com",
+
+  databaseURL:
+    "https://lista-compras-crismaio-default-rtdb.europe-west1.firebasedatabase.app",
+
+  projectId: "lista-compras-crismaio",
+
+  storageBucket:
+    "lista-compras-crismaio.firebasestorage.app",
+
+  messagingSenderId: "885212139817",
+
+  appId:
+    "1:885212139817:web:822d3bc44bb0b3f334a738"
+};
+
+
+const app = initializeApp(firebaseConfig);
+
+const auth = getAuth(app);
+
+const db = getDatabase(app);
+
+const provider = new GoogleAuthProvider();
+
+
+const $ = id => document.getElementById(id);
+
+let currentUser = null;
+
+let stopList = null;
+
+let stopProducts = null;
+
+
+function setStatus(text){
+  $("status").textContent = text;
 }
-function renderQRs(){
- document.getElementById("qrs").innerHTML=products.map(p=>`<div class="qr">
-   <img src="${qrUrl(p)}" alt="QR ${esc(p)}">
-   <strong>${esc(p)}</strong><br>
-   <button class="add" onclick="add('${esc(p)}')">Testar +1</button>
- </div>`).join("");
+
+
+async function login(){
+
+  try{
+
+    await signInWithPopup(auth,provider);
+
+  }catch(e){
+
+    console.error(e);
+
+    alert(
+      "Não foi possível iniciar sessão.\n\n" +
+      (e.message || e)
+    );
+
+  }
+
 }
-function handleHash(){
- const m=location.hash.match(/^#add=(.*)$/);
- if(m){add(decodeURIComponent(m[1])); history.replaceState(null,"",location.pathname+location.search);}
+
+
+$("loginBtn").onclick = login;
+
+$("logoutBtn").onclick = () => signOut(auth);
+
+
+function safeId(name){
+
+  return name
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g,"")
+    .replace(/[^a-z0-9]+/g,"-")
+    .replace(/^-|-$/g,"")
+    .slice(0,60) || "produto";
+
 }
-render();renderQRs();handleHash();
+
+
+function renderList(data){
+
+  const list = $("list");
+
+  list.innerHTML = "";
+
+  const entries = data
+    ? Object.entries(data)
+    : [];
+
+  $("empty").style.display =
+    entries.length ? "none" : "block";
+
+
+  entries.sort((a,b)=>{
+
+    const A=a[1];
+
+    const B=b[1];
+
+    return Number(A.bought)-Number(B.bought)
+      ||
+      String(A.name).localeCompare(
+        String(B.name),
+        "pt"
+      );
+
+  });
+
+
+  for(const [id,item] of entries){
+
+    const row = document.createElement("div");
+
+    row.className =
+      "item" +
+      (item.bought ? " bought" : "");
+
+
+    const check =
+      document.createElement("input");
+
+    check.type = "checkbox";
+
+    check.checked = !!item.bought;
+
+    check.onchange = () => {
+
+      update(
+        ref(
+          db,
+          `users/${currentUser.uid}/shopping/${id}`
+        ),
+        {
+          bought: check.checked
+        }
+      );
+
+    };
+
+
+    const name =
+      document.createElement("span");
+
+    name.className = "name";
+
+    name.textContent = item.name;
+
+
+    const minus =
+      document.createElement("button");
+
+    minus.className = "small";
+
+    minus.textContent = "−";
+
+    minus.onclick =
+      () => changeQty(id,item,-1);
+
+
+    const qty =
+      document.createElement("span");
+
+    qty.className = "qty";
+
+    qty.textContent = item.qty || 1;
+
+
+    const plus =
+      document.createElement("button");
+
+    plus.className = "small";
+
+    plus.textContent = "+";
+
+    plus.onclick =
+      () => changeQty(id,item,1);
+
+
+    const del =
+      document.createElement("button");
+
+    del.className = "small danger";
+
+    del.textContent = "🗑️";
+
+    del.onclick = () => {
+
+      remove(
+        ref(
+          db,
+          `users/${currentUser.uid}/shopping/${id}`
+        )
+      );
+
+    };
+
+
+    row.append(
+      check,
+      name,
+      minus,
+      qty,
+      plus,
+      del
+    );
+
+    list.appendChild(row);
+
+  }
+
+}
+
+
+async function changeQty(id,item,delta){
+
+  const current =
+    item.qty || 1;
+
+  if(delta < 0 && current <= 1){
+
+    await remove(
+      ref(
+        db,
+        `users/${currentUser.uid}/shopping/${id}`
+      )
+    );
+
+    return;
+
+  }
+
+
+  await update(
+    ref(
+      db,
+      `users/${currentUser.uid}/shopping/${id}`
+    ),
+    {
+      qty: Math.max(1,current + delta)
+    }
+  );
+
+}
+
+
+async function addShopping(name){
+
+  name = name.trim();
+
+  if(!name) return;
+
+
+  const id = safeId(name);
+
+  const r =
+    ref(
+      db,
+      `users/${currentUser.uid}/shopping/${id}`
+    );
+
+
+  const existing =
+    window.__shoppingData?.[id];
+
+
+  if(existing){
+
+    await update(
+      r,
+      {
+        qty: (existing.qty || 1) + 1,
+        bought: false,
+        name: existing.name
+      }
+    );
+
+  }else{
+
+    await set(
+      r,
+      {
+        name,
+        qty: 1,
+        bought: false
+      }
+    );
+
+  }
+
+}
+
+
+$("manualAdd").onclick = async () => {
+
+  await addShopping(
+    $("manualName").value
+  );
+
+  $("manualName").value = "";
+
+};
+
+
+$("manualName").addEventListener(
+  "keydown",
+  e => {
+
+    if(e.key === "Enter")
+      $("manualAdd").click();
+
+  }
+);
+
+
+function renderProducts(data){
+
+  const box = $("products");
+
+  box.innerHTML = "";
+
+
+  const entries = data
+    ? Object.entries(data)
+    : [];
+
+
+  entries.sort(
+    (a,b) =>
+      String(a[1].name).localeCompare(
+        String(b[1].name),
+        "pt"
+      )
+  );
+
+
+  for(
+    const [id,p]
+    of entries
+  ){
+
+    const row =
+      document.createElement("div");
+
+    row.className = "product";
+
+
+    const left =
+      document.createElement("span");
+
+    left.textContent = p.name;
+
+
+    const actions =
+      document.createElement("div");
+
+    actions.className = "row";
+
+
+    const add =
+      document.createElement("button");
+
+    add.className = "small primary";
+
+    add.textContent = "Adicionar";
+
+    add.onclick =
+      () => addShopping(p.name);
+
+
+    const qr =
+      document.createElement("button");
+
+    qr.className = "small";
+
+    qr.textContent = "Ver QR";
+
+    qr.onclick =
+      () => showQR(id,p.name);
+
+
+    actions.append(add,qr);
+
+    row.append(left,actions);
+
+    box.appendChild(row);
+
+  }
+
+}
+
+
+async function createProduct(){
+
+  const name =
+    $("productName").value.trim();
+
+  if(!name) return;
+
+
+  const id = safeId(name);
+
+
+  await set(
+    ref(
+      db,
+      `users/${currentUser.uid}/products/${id}`
+    ),
+    {
+      name
+    }
+  );
+
+
+  $("productName").value = "";
+
+}
+
+
+$("createProduct").onclick =
+  createProduct;
+
+
+$("productName").addEventListener(
+  "keydown",
+  e => {
+
+    if(e.key === "Enter")
+      createProduct();
+
+  }
+);
+
+
+function escapeHtml(s){
+
+  return s.replace(
+    /[&<>"']/g,
+    c => ({
+      "&":"&amp;",
+      "<":"&lt;",
+      ">":"&gt;",
+      '"':"&quot;",
+      "'":"&#39;"
+    }[c])
+  );
+
+}
+
+
+function showQR(id,name){
+
+  const url =
+    `${location.origin}${location.pathname}#add=${encodeURIComponent(id)}`;
+
+
+  const dialog =
+    document.createElement("dialog");
+
+
+  dialog.innerHTML = `
+
+    <div style="text-align:center">
+
+      <h3>
+        ${escapeHtml(name)}
+      </h3>
+
+      <img
+        class="qr"
+        alt="QR de ${escapeHtml(name)}"
+        src="https://quickchart.io/qr?size=260&text=${encodeURIComponent(url)}"
+      >
+
+      <p class="muted">
+        Imprime este QR e coloca-o junto ao produto.
+      </p>
+
+      <p
+        style="font-size:12px;word-break:break-all"
+      >
+        ${escapeHtml(url)}
+      </p>
+
+      <button id="closeQR">
+        Fechar
+      </button>
+
+    </div>
+
+  `;
+
+
+  document.body.appendChild(dialog);
+
+  dialog.showModal();
+
+
+  dialog.querySelector("#closeQR").onclick =
+    () => dialog.close();
+
+
+  dialog.addEventListener(
+    "close",
+    () => dialog.remove()
+  );
+
+}
+
+
+async function processQR(){
+
+  const hash = location.hash;
+
+
+  if(
+    !hash.startsWith("#add=")
+    ||
+    !currentUser
+  ){
+
+    return;
+
+  }
+
+
+  const id =
+    decodeURIComponent(
+      hash.slice(5)
+    );
+
+
+  history.replaceState(
+    null,
+    "",
+    location.pathname
+  );
+
+
+  const product =
+    window.__productsData?.[id];
+
+
+  if(product){
+
+    await addShopping(
+      product.name
+    );
+
+
+    alert(
+      `${product.name} foi adicionado à lista.`
+    );
+
+  }else{
+
+    alert(
+      "Produto não encontrado. " +
+      "O QR pode pertencer a um produto que foi apagado."
+    );
+
+  }
+
+}
+
+
+onAuthStateChanged(
+  auth,
+  user => {
+
+    currentUser = user;
+
+
+    if(!user){
+
+      $("app").classList.add("hidden");
+
+      $("loginArea").classList.remove("hidden");
+
+      setStatus(
+        "É necessário iniciar sessão."
+      );
+
+
+      if(stopList)
+        stopList();
+
+      if(stopProducts)
+        stopProducts();
+
+      return;
+
+    }
+
+
+    $("loginArea").classList.add("hidden");
+
+    $("app").classList.remove("hidden");
+
+
+    $("userName").textContent =
+      user.displayName ||
+      user.email ||
+      "Utilizador";
+
+
+    setStatus(
+      "✓ Sincronizado com a Firebase"
+    );
+
+
+    const listRef =
+      ref(
+        db,
+        `users/${user.uid}/shopping`
+      );
+
+
+    stopList =
+      onValue(
+        listRef,
+        snap => {
+
+          window.__shoppingData =
+            snap.val() || {};
+
+          renderList(
+            window.__shoppingData
+          );
+
+        }
+      );
+
+
+    const productsRef =
+      ref(
+        db,
+        `users/${user.uid}/products`
+      );
+
+
+    stopProducts =
+      onValue(
+        productsRef,
+        snap => {
+
+          window.__productsData =
+            snap.val() || {};
+
+          renderProducts(
+            window.__productsData
+          );
+
+          processQR();
+
+        }
+      );
+
+  }
+);
+
+
+window.addEventListener(
+  "hashchange",
+  processQR
+);
+
 </script>
+
 </body>
 </html>
