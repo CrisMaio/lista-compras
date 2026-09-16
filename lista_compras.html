@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lista de Compras</title>
+<style>
+body{font-family:system-ui,-apple-system,Segoe UI,sans-serif;max-width:720px;margin:auto;padding:18px;background:#f6f6f6;color:#222}
+h1{margin-bottom:4px}.sub{color:#666;margin-top:0}
+.card{background:white;border-radius:16px;padding:16px;margin:12px 0;box-shadow:0 2px 10px #0001}
+.item{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid #eee}
+.item:last-child{border-bottom:0}.name{flex:1}.qty{font-weight:600}
+button,input{font:inherit}button{border:0;border-radius:10px;padding:9px 12px;cursor:pointer}
+.add{background:#222;color:white}.danger{background:#eee}.buy{background:#dff3df}
+input{width:100%;box-sizing:border-box;padding:11px;border:1px solid #ddd;border-radius:10px}
+.empty{color:#777;text-align:center;padding:20px}.small{font-size:.88rem;color:#666}
+.qrs{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.qr{border:1px solid #eee;border-radius:12px;padding:12px;text-align:center}
+.qr img{width:130px;height:130px;max-width:100%}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<h1>🛒 Lista de compras</h1>
+<p class="sub">Lê um QR de produto para o acrescentar automaticamente.</p>
+
+<div class="card">
+  <div class="actions">
+    <button class="danger" onclick="clearBought()">Limpar comprados</button>
+    <button class="danger" onclick="clearAll()">Limpar lista</button>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Lista atual</h2>
+  <div id="list"></div>
+</div>
+
+<div class="card">
+  <h2>Adicionar manualmente</h2>
+  <div class="actions">
+    <input id="newItem" placeholder="Ex.: açúcar" onkeydown="if(event.key==='Enter') addManual()">
+    <button class="add" onclick="addManual()">Adicionar</button>
+  </div>
+</div>
+
+<div class="card">
+  <h2>QR Codes de exemplo</h2>
+  <p class="small">Para testar sem imprimir, toca num QR ou aponta a câmara para ele.</p>
+  <div id="qrs" class="qrs"></div>
+</div>
+
+<script>
+const products = ['Leite', 'Café', 'Arroz', 'Ovos', 'Papel higiénico', 'Detergente', 'Ração do gato', 'Azeite'];
+const key="lista_compras_prototipo";
+let list=JSON.parse(localStorage.getItem(key)||"{}");
+
+function save(){localStorage.setItem(key,JSON.stringify(list)); render();}
+function add(name){
+  name=name.trim(); if(!name)return;
+  const k=name.toLowerCase();
+  if(!list[k]) list[k]={name,qty:1,bought:false};
+  else list[k].qty++;
+  save();
+}
+function addManual(){add(document.getElementById("newItem").value);document.getElementById("newItem").value="";}
+function change(k,d){if(!list[k])return;list[k].qty+=d;if(list[k].qty<=0)delete list[k];save();}
+function toggle(k){list[k].bought=!list[k].bought;save();}
+function clearBought(){Object.keys(list).forEach(k=>{if(list[k].bought)delete list[k]});save();}
+function clearAll(){if(confirm("Apagar toda a lista?")){list={};save();}}
+
+function render(){
+ const el=document.getElementById("list"), keys=Object.keys(list);
+ if(!keys.length){el.innerHTML='<div class="empty">A lista está vazia.</div>';return;}
+ el.innerHTML=keys.map(k=>{let x=list[k];return `<div class="item">
+   <input type="checkbox" ${x.bought?'checked':''} onchange="toggle('${esc(k)}')">
+   <span class="name" style="${x.bought?'text-decoration:line-through;color:#888':''}">${esc(x.name)}</span>
+   <button onclick="change('${esc(k)}',-1)">−</button><span class="qty">${x.qty}</span>
+   <button onclick="change('${esc(k)}',1)">+</button>
+ </div>`}).join("");
+}
+function esc(s){return s.replaceAll("&","&amp;").replaceAll("'","&#39;").replaceAll('"',"&quot;").replaceAll("<","&lt;").replaceAll(">","&gt;");}
+
+function qrUrl(product){
+  const payload=location.href.split("#")[0]+"#add="+encodeURIComponent(product);
+  return "https://quickchart.io/qr?size=260&text="+encodeURIComponent(payload);
+}
+function renderQRs(){
+ document.getElementById("qrs").innerHTML=products.map(p=>`<div class="qr">
+   <img src="${qrUrl(p)}" alt="QR ${esc(p)}">
+   <strong>${esc(p)}</strong><br>
+   <button class="add" onclick="add('${esc(p)}')">Testar +1</button>
+ </div>`).join("");
+}
+function handleHash(){
+ const m=location.hash.match(/^#add=(.*)$/);
+ if(m){add(decodeURIComponent(m[1])); history.replaceState(null,"",location.pathname+location.search);}
+}
+render();renderQRs();handleHash();
+</script>
+</body>
+</html>
