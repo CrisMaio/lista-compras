@@ -8,15 +8,22 @@
 <style>
 body{
   font-family:Arial,sans-serif;
-  max-width:720px;
+  max-width:760px;
   margin:0 auto;
   padding:20px;
   background:#f7f7f7;
   color:#222
 }
+
 h1{margin:0 0 8px}
 h2{margin-top:0}
-.muted{color:#666;font-size:14px}
+h3{margin:0 0 8px}
+
+.muted{
+  color:#666;
+  font-size:14px
+}
+
 .card{
   background:#fff;
   border-radius:14px;
@@ -24,6 +31,7 @@ h2{margin-top:0}
   margin:14px 0;
   box-shadow:0 2px 10px #0001
 }
+
 button{
   border:0;
   border-radius:9px;
@@ -31,67 +39,207 @@ button{
   cursor:pointer;
   font-size:15px
 }
-.primary{background:#222;color:#fff}
-.danger{background:#eee}
-.small{padding:6px 10px}
-input{
+
+.primary{
+  background:#222;
+  color:#fff
+}
+
+.danger{
+  background:#eee
+}
+
+.small{
+  padding:6px 10px
+}
+
+input,select{
   padding:10px;
   border:1px solid #ccc;
   border-radius:9px;
-  font-size:15px
+  font-size:15px;
+  box-sizing:border-box
 }
+
 .row{
   display:flex;
   gap:8px;
   align-items:center;
   flex-wrap:wrap
 }
-#loginArea{text-align:center;padding:20px}
+
+#loginArea{
+  text-align:center;
+  padding:20px
+}
+
+.hidden{
+  display:none
+}
+
+.search{
+  width:100%;
+  margin:10px 0
+}
+
 .item{
   display:flex;
   align-items:center;
-  gap:9px;
-  padding:11px 0;
+  gap:8px;
+  padding:10px 0;
   border-bottom:1px solid #eee
 }
-.item:last-child{border-bottom:0}
-.name{flex:1}
+
+.item:last-child{
+  border-bottom:0
+}
+
+.name{
+  flex:1
+}
+
 .qty{
   min-width:28px;
   text-align:center;
   font-weight:bold
 }
+
 .bought .name{
   text-decoration:line-through;
   color:#888
 }
+
 .product{
   display:flex;
   justify-content:space-between;
   align-items:center;
   gap:10px;
-  padding:10px 0;
+  padding:11px 0;
   border-bottom:1px solid #eee
 }
-.product:last-child{border-bottom:0}
+
+.product:last-child{
+  border-bottom:0
+}
+
+.product-info{
+  flex:1
+}
+
+.product-category{
+  color:#777;
+  font-size:13px;
+  margin-top:3px
+}
+
+.product-actions{
+  display:flex;
+  gap:5px;
+  flex-wrap:wrap;
+  justify-content:flex-end
+}
+
 .qr{
   width:220px;
   max-width:100%;
   display:block;
   margin:10px auto
 }
-.hidden{display:none}
+
+.sector{
+  margin-top:18px
+}
+
+.sector-title{
+  border-bottom:2px solid #ddd;
+  padding-bottom:6px;
+  margin-bottom:4px
+}
+
+.toolbar{
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  align-items:center;
+  flex-wrap:wrap
+}
+
+@media(max-width:520px){
+  body{
+    padding:12px
+  }
+
+  .product{
+    align-items:flex-start
+  }
+
+  .product-actions{
+    max-width:180px
+  }
+}
+
+@media print{
+  body{
+    max-width:none;
+    background:#fff;
+    padding:0
+  }
+
+  body > h1,
+  body > #status{
+    display:none!important
+  }
+
+  #app > .card:first-child,
+  #app > .card:nth-child(3){
+    display:none!important
+  }
+
+  #shoppingControls,
+  #manualArea,
+  #listSearch{
+    display:none!important
+  }
+
+  #shoppingCard{
+    box-shadow:none;
+    margin:0;
+    padding:0
+  }
+
+  .item button,
+  .item input{
+    display:none!important
+  }
+
+  .item{
+    padding:5px 0
+  }
+
+  .sector-title{
+    margin-top:15px
+  }
+}
 </style>
 </head>
 
 <body>
 
 <h1>🛒 Lista de compras</h1>
-<div id="status" class="muted">A ligar à conta...</div>
+
+<div id="status" class="muted">
+  A ligar à conta...
+</div>
 
 <div id="loginArea" class="card hidden">
-  <p>Entra com a tua conta Google para usar a mesma lista no PC e no telemóvel.</p>
-  <button id="loginBtn" class="primary">Entrar com Google</button>
+  <p>
+    Entra com a tua conta Google para usar a mesma lista
+    no PC e no telemóvel.
+  </p>
+
+  <button id="loginBtn" class="primary">
+    Entrar com Google
+  </button>
 </div>
 
 <div id="app" class="hidden">
@@ -99,44 +247,154 @@ input{
   <div class="card">
     <div class="row" style="justify-content:space-between">
       <strong id="userName"></strong>
-      <button id="logoutBtn" class="small danger">Sair</button>
+
+      <button id="logoutBtn" class="small danger">
+        Sair
+      </button>
     </div>
   </div>
 
-  <div class="card">
-    <h2>Lista</h2>
+
+  <!-- LISTA DE COMPRAS -->
+
+  <div class="card" id="shoppingCard">
+
+    <div class="toolbar">
+      <h2>Lista</h2>
+
+      <button id="printBtn" class="small">
+        🖨️ Imprimir
+      </button>
+    </div>
+
+    <input
+      id="listSearch"
+      class="search"
+      placeholder="🔎 Pesquisar na lista"
+    >
+
+    <div
+      id="shoppingControls"
+      class="row"
+      style="margin-bottom:10px"
+    >
+
+      <button id="clearBought" class="small danger">
+        Limpar comprados
+      </button>
+
+      <button id="clearList" class="small danger">
+        Limpar lista
+      </button>
+
+    </div>
 
     <div id="list"></div>
 
-    <p id="empty" class="muted">A lista está vazia.</p>
+    <p id="empty" class="muted">
+      A lista está vazia.
+    </p>
 
-    <div class="row" style="margin-top:12px">
-      <input id="manualName" placeholder="Adicionar produto manualmente">
-      <button id="manualAdd" class="primary">Adicionar</button>
+    <div
+      id="manualArea"
+      class="card"
+      style="margin-top:15px;background:#fafafa"
+    >
+
+      <strong>Adicionar manualmente</strong>
+
+      <div class="row" style="margin-top:8px">
+
+        <input
+          id="manualName"
+          placeholder="Nome do produto"
+          style="flex:1"
+        >
+
+        <select id="manualCategory">
+
+          <option>Frutas e legumes</option>
+          <option>Padaria</option>
+          <option>Laticínios e ovos</option>
+          <option>Carne e peixe</option>
+          <option>Mercearia</option>
+          <option>Congelados</option>
+          <option>Bebidas</option>
+          <option>Higiene e limpeza</option>
+          <option>Casa</option>
+          <option>Outros</option>
+
+        </select>
+
+        <button id="manualAdd" class="primary">
+          Adicionar
+        </button>
+
+      </div>
     </div>
+
   </div>
 
+
+  <!-- PRODUTOS -->
+
   <div class="card">
+
     <h2>Produtos e QR</h2>
 
     <p class="muted">
-      Cria um produto uma vez. O QR desse produto pode ser impresso
-      e colocado junto ao artigo.
+      Cada produto tem um QR próprio. Podes editar o nome,
+      alterar o sector, adicionar à lista, ver o QR ou eliminar.
     </p>
 
     <div class="row">
-      <input id="productName" placeholder="Ex.: Leite">
-      <button id="createProduct" class="primary">Criar produto</button>
+
+      <input
+        id="productName"
+        placeholder="Ex.: Leite"
+        style="flex:1"
+      >
+
+      <select id="productCategory">
+
+        <option>Frutas e legumes</option>
+        <option>Padaria</option>
+        <option>Laticínios e ovos</option>
+        <option>Carne e peixe</option>
+        <option>Mercearia</option>
+        <option>Congelados</option>
+        <option>Bebidas</option>
+        <option>Higiene e limpeza</option>
+        <option>Casa</option>
+        <option>Outros</option>
+
+      </select>
+
+      <button id="createProduct" class="primary">
+        Criar produto
+      </button>
+
     </div>
 
+    <input
+      id="productSearch"
+      class="search"
+      placeholder="🔎 Pesquisar produtos"
+    >
+
     <div id="products"></div>
+
   </div>
 
 </div>
 
+
 <script type="module">
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+import {
+  initializeApp
+} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+
 
 import {
   getAuth,
@@ -144,8 +402,8 @@ import {
   signInWithPopup,
   signOut,
   onAuthStateChanged
-}
-from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+
 
 import {
   getDatabase,
@@ -154,28 +412,37 @@ import {
   set,
   update,
   remove
-}
-from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
+} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
 
+
+/* =========================================================
+   FIREBASE
+   Mantida exatamente a configuração existente
+========================================================= */
 
 const firebaseConfig = {
 
-  apiKey: "AIzaSyAvRVBBIk9FahPeE3E40wbedAi73e4TLsY",
+  apiKey:
+    "AIzaSyAvRVBBIk9FahPeE3E40wbedAi73e4TLsY",
 
-  authDomain: "lista-compras-crismaio.firebaseapp.com",
+  authDomain:
+    "lista-compras-crismaio.firebaseapp.com",
 
   databaseURL:
     "https://lista-compras-crismaio-default-rtdb.europe-west1.firebasedatabase.app",
 
-  projectId: "lista-compras-crismaio",
+  projectId:
+    "lista-compras-crismaio",
 
   storageBucket:
     "lista-compras-crismaio.firebasestorage.app",
 
-  messagingSenderId: "885212139817",
+  messagingSenderId:
+    "885212139817",
 
   appId:
     "1:885212139817:web:822d3bc44bb0b3f334a738"
+
 };
 
 
@@ -188,7 +455,9 @@ const db = getDatabase(app);
 const provider = new GoogleAuthProvider();
 
 
-const $ = id => document.getElementById(id);
+const $ = id =>
+  document.getElementById(id);
+
 
 let currentUser = null;
 
@@ -196,17 +465,83 @@ let stopList = null;
 
 let stopProducts = null;
 
+window.__shoppingData = {};
+
+window.__productsData = {};
+
+
+/* =========================================================
+   UTILITÁRIOS
+========================================================= */
 
 function setStatus(text){
   $("status").textContent = text;
 }
 
 
+function safeId(name){
+
+  return name
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g,"")
+    .replace(/[^a-z0-9]+/g,"-")
+    .replace(/^-|-$/g,"")
+    .slice(0,60)
+    || "produto";
+
+}
+
+
+function escapeHtml(s){
+
+  return String(s).replace(
+    /[&<>"']/g,
+    c => ({
+      "&":"&amp;",
+      "<":"&lt;",
+      ">":"&gt;",
+      '"':"&quot;",
+      "'":"&#39;"
+    }[c])
+  );
+
+}
+
+
+function getCategory(item){
+
+  return item.category || "Outros";
+
+}
+
+
+function getProductByName(name){
+
+  const products =
+    Object.values(window.__productsData || {});
+
+  return products.find(
+    p => String(p.name).toLowerCase() ===
+         String(name).toLowerCase()
+  );
+
+}
+
+
+/* =========================================================
+   LOGIN
+========================================================= */
+
 async function login(){
 
   try{
 
-    await signInWithPopup(auth,provider);
+    await signInWithPopup(
+      auth,
+      provider
+    );
 
   }catch(e){
 
@@ -224,163 +559,299 @@ async function login(){
 
 $("loginBtn").onclick = login;
 
-$("logoutBtn").onclick = () => signOut(auth);
+
+$("logoutBtn").onclick = () =>
+  signOut(auth);
 
 
-function safeId(name){
-
-  return name
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g,"")
-    .replace(/[^a-z0-9]+/g,"-")
-    .replace(/^-|-$/g,"")
-    .slice(0,60) || "produto";
-
-}
-
+/* =========================================================
+   LISTA
+========================================================= */
 
 function renderList(data){
 
-  const list = $("list");
+  window.__shoppingData =
+    data || {};
+
+  const list =
+    $("list");
 
   list.innerHTML = "";
 
-  const entries = data
-    ? Object.entries(data)
-    : [];
+
+  const search =
+    $("listSearch").value
+      .trim()
+      .toLocaleLowerCase("pt");
+
+
+  let entries =
+    Object.entries(window.__shoppingData);
+
+
+  if(search){
+
+    entries =
+      entries.filter(
+        ([,item]) =>
+          String(item.name)
+            .toLocaleLowerCase("pt")
+            .includes(search)
+          ||
+          getCategory(item)
+            .toLocaleLowerCase("pt")
+            .includes(search)
+      );
+
+  }
+
 
   $("empty").style.display =
-    entries.length ? "none" : "block";
+    entries.length
+      ? "none"
+      : "block";
 
 
   entries.sort((a,b)=>{
 
-    const A=a[1];
+    const A = a[1];
 
-    const B=b[1];
+    const B = b[1];
 
-    return Number(A.bought)-Number(B.bought)
-      ||
-      String(A.name).localeCompare(
-        String(B.name),
-        "pt"
-      );
+    return (
+      Number(A.bought) -
+      Number(B.bought)
+    )
+    ||
+    getCategory(A).localeCompare(
+      getCategory(B),
+      "pt"
+    )
+    ||
+    String(A.name).localeCompare(
+      String(B.name),
+      "pt"
+    );
 
   });
 
 
+  const groups = {};
+
+
   for(const [id,item] of entries){
 
-    const row = document.createElement("div");
+    const category =
+      getCategory(item);
 
-    row.className =
-      "item" +
-      (item.bought ? " bought" : "");
+    if(!groups[category])
+      groups[category] = [];
 
-
-    const check =
-      document.createElement("input");
-
-    check.type = "checkbox";
-
-    check.checked = !!item.bought;
-
-    check.onchange = () => {
-
-      update(
-        ref(
-          db,
-          `users/${currentUser.uid}/shopping/${id}`
-        ),
-        {
-          bought: check.checked
-        }
-      );
-
-    };
-
-
-    const name =
-      document.createElement("span");
-
-    name.className = "name";
-
-    name.textContent = item.name;
-
-
-    const minus =
-      document.createElement("button");
-
-    minus.className = "small";
-
-    minus.textContent = "−";
-
-    minus.onclick =
-      () => changeQty(id,item,-1);
-
-
-    const qty =
-      document.createElement("span");
-
-    qty.className = "qty";
-
-    qty.textContent = item.qty || 1;
-
-
-    const plus =
-      document.createElement("button");
-
-    plus.className = "small";
-
-    plus.textContent = "+";
-
-    plus.onclick =
-      () => changeQty(id,item,1);
-
-
-    const del =
-      document.createElement("button");
-
-    del.className = "small danger";
-
-    del.textContent = "🗑️";
-
-    del.onclick = () => {
-
-      remove(
-        ref(
-          db,
-          `users/${currentUser.uid}/shopping/${id}`
-        )
-      );
-
-    };
-
-
-    row.append(
-      check,
-      name,
-      minus,
-      qty,
-      plus,
-      del
+    groups[category].push(
+      [id,item]
     );
 
-    list.appendChild(row);
+  }
+
+
+  const categories =
+    Object.keys(groups).sort(
+      (a,b) =>
+        a.localeCompare(b,"pt")
+    );
+
+
+  for(const category of categories){
+
+    const sector =
+      document.createElement("div");
+
+    sector.className =
+      "sector";
+
+
+    const title =
+      document.createElement("h3");
+
+    title.className =
+      "sector-title";
+
+    title.textContent =
+      category;
+
+
+    sector.appendChild(title);
+
+
+    for(
+      const [id,item]
+      of groups[category]
+    ){
+
+      const row =
+        document.createElement("div");
+
+      row.className =
+        "item" +
+        (item.bought
+          ? " bought"
+          : "");
+
+
+      const check =
+        document.createElement("input");
+
+      check.type =
+        "checkbox";
+
+      check.checked =
+        !!item.bought;
+
+
+      check.onchange =
+        () => {
+
+          update(
+            ref(
+              db,
+              `users/${currentUser.uid}/shopping/${id}`
+            ),
+            {
+              bought:
+                check.checked
+            }
+          );
+
+        };
+
+
+      const name =
+        document.createElement("span");
+
+      name.className =
+        "name";
+
+      name.textContent =
+        item.name;
+
+
+      const minus =
+        document.createElement("button");
+
+      minus.className =
+        "small";
+
+      minus.textContent =
+        "−";
+
+      minus.onclick =
+        () =>
+          changeQty(
+            id,
+            item,
+            -1
+          );
+
+
+      const qty =
+        document.createElement("span");
+
+      qty.className =
+        "qty";
+
+      qty.textContent =
+        item.qty || 1;
+
+
+      const plus =
+        document.createElement("button");
+
+      plus.className =
+        "small";
+
+      plus.textContent =
+        "+";
+
+      plus.onclick =
+        () =>
+          changeQty(
+            id,
+            item,
+            1
+          );
+
+
+      const del =
+        document.createElement("button");
+
+      del.className =
+        "small danger";
+
+      del.textContent =
+        "🗑️";
+
+      del.onclick =
+        () => {
+
+          remove(
+            ref(
+              db,
+              `users/${currentUser.uid}/shopping/${id}`
+            )
+          );
+
+        };
+
+
+      row.append(
+        check,
+        name,
+        minus,
+        qty,
+        plus,
+        del
+      );
+
+
+      sector.appendChild(row);
+
+    }
+
+
+    list.appendChild(sector);
 
   }
 
 }
 
 
-async function changeQty(id,item,delta){
+$("listSearch").addEventListener(
+  "input",
+  () =>
+    renderList(
+      window.__shoppingData
+    )
+);
+
+
+/* =========================================================
+   QUANTIDADES
+========================================================= */
+
+async function changeQty(
+  id,
+  item,
+  delta
+){
 
   const current =
     item.qty || 1;
 
-  if(delta < 0 && current <= 1){
+
+  if(
+    delta < 0 &&
+    current <= 1
+  ){
 
     await remove(
       ref(
@@ -400,21 +871,37 @@ async function changeQty(id,item,delta){
       `users/${currentUser.uid}/shopping/${id}`
     ),
     {
-      qty: Math.max(1,current + delta)
+      qty:
+        Math.max(
+          1,
+          current + delta
+        )
     }
   );
 
 }
 
 
-async function addShopping(name){
+/* =========================================================
+   ADICIONAR À LISTA
+========================================================= */
 
-  name = name.trim();
+async function addShopping(
+  name,
+  category
+){
 
-  if(!name) return;
+  name =
+    String(name).trim();
 
 
-  const id = safeId(name);
+  if(!name)
+    return;
+
+
+  const id =
+    safeId(name);
+
 
   const r =
     ref(
@@ -427,14 +914,39 @@ async function addShopping(name){
     window.__shoppingData?.[id];
 
 
+  let finalCategory =
+    category;
+
+
+  if(!finalCategory){
+
+    const product =
+      getProductByName(name);
+
+    finalCategory =
+      product?.category ||
+      existing?.category ||
+      "Outros";
+
+  }
+
+
   if(existing){
 
     await update(
       r,
       {
-        qty: (existing.qty || 1) + 1,
-        bought: false,
-        name: existing.name
+        qty:
+          (existing.qty || 1) + 1,
+
+        bought:
+          false,
+
+        name:
+          existing.name,
+
+        category:
+          finalCategory
       }
     );
 
@@ -443,9 +955,17 @@ async function addShopping(name){
     await set(
       r,
       {
-        name,
-        qty: 1,
-        bought: false
+        name:
+          name,
+
+        qty:
+          1,
+
+        bought:
+          false,
+
+        category:
+          finalCategory
       }
     );
 
@@ -454,15 +974,22 @@ async function addShopping(name){
 }
 
 
-$("manualAdd").onclick = async () => {
+/* =========================================================
+   ADIÇÃO MANUAL
+========================================================= */
 
-  await addShopping(
-    $("manualName").value
-  );
+$("manualAdd").onclick =
+  async () => {
 
-  $("manualName").value = "";
+    await addShopping(
+      $("manualName").value,
+      $("manualCategory").value
+    );
 
-};
+    $("manualName").value =
+      "";
+
+  };
 
 
 $("manualName").addEventListener(
@@ -476,24 +1003,58 @@ $("manualName").addEventListener(
 );
 
 
+/* =========================================================
+   PRODUTOS
+========================================================= */
+
 function renderProducts(data){
 
-  const box = $("products");
+  window.__productsData =
+    data || {};
+
+
+  const box =
+    $("products");
 
   box.innerHTML = "";
 
 
-  const entries = data
-    ? Object.entries(data)
-    : [];
+  const search =
+    $("productSearch").value
+      .trim()
+      .toLocaleLowerCase("pt");
+
+
+  let entries =
+    Object.entries(
+      window.__productsData
+    );
+
+
+  if(search){
+
+    entries =
+      entries.filter(
+        ([,p]) =>
+          String(p.name)
+            .toLocaleLowerCase("pt")
+            .includes(search)
+          ||
+          String(p.category || "Outros")
+            .toLocaleLowerCase("pt")
+            .includes(search)
+      );
+
+  }
 
 
   entries.sort(
     (a,b) =>
-      String(a[1].name).localeCompare(
-        String(b[1].name),
-        "pt"
-      )
+      String(a[1].name)
+        .localeCompare(
+          String(b[1].name),
+          "pt"
+        )
   );
 
 
@@ -505,46 +1066,128 @@ function renderProducts(data){
     const row =
       document.createElement("div");
 
-    row.className = "product";
+    row.className =
+      "product";
 
 
-    const left =
-      document.createElement("span");
+    const info =
+      document.createElement("div");
 
-    left.textContent = p.name;
+    info.className =
+      "product-info";
+
+
+    const name =
+      document.createElement("strong");
+
+    name.textContent =
+      p.name;
+
+
+    const category =
+      document.createElement("div");
+
+    category.className =
+      "product-category";
+
+    category.textContent =
+      getCategory(p);
+
+
+    info.append(
+      name,
+      category
+    );
 
 
     const actions =
       document.createElement("div");
 
-    actions.className = "row";
+    actions.className =
+      "product-actions";
 
 
     const add =
       document.createElement("button");
 
-    add.className = "small primary";
+    add.className =
+      "small primary";
 
-    add.textContent = "Adicionar";
+    add.textContent =
+      "Adicionar";
 
     add.onclick =
-      () => addShopping(p.name);
+      () =>
+        addShopping(
+          p.name,
+          getCategory(p)
+        );
 
 
     const qr =
       document.createElement("button");
 
-    qr.className = "small";
+    qr.className =
+      "small";
 
-    qr.textContent = "Ver QR";
+    qr.textContent =
+      "Ver QR";
 
     qr.onclick =
-      () => showQR(id,p.name);
+      () =>
+        showQR(
+          id,
+          p.name
+        );
 
 
-    actions.append(add,qr);
+    const edit =
+      document.createElement("button");
 
-    row.append(left,actions);
+    edit.className =
+      "small";
+
+    edit.textContent =
+      "Editar";
+
+    edit.onclick =
+      () =>
+        editProduct(
+          id,
+          p
+        );
+
+
+    const del =
+      document.createElement("button");
+
+    del.className =
+      "small danger";
+
+    del.textContent =
+      "Eliminar";
+
+    del.onclick =
+      () =>
+        deleteProduct(
+          id,
+          p
+        );
+
+
+    actions.append(
+      add,
+      qr,
+      edit,
+      del
+    );
+
+
+    row.append(
+      info,
+      actions
+    );
+
 
     box.appendChild(row);
 
@@ -553,15 +1196,50 @@ function renderProducts(data){
 }
 
 
+$("productSearch").addEventListener(
+  "input",
+  () =>
+    renderProducts(
+      window.__productsData
+    )
+);
+
+
+/* =========================================================
+   CRIAR PRODUTO
+========================================================= */
+
 async function createProduct(){
 
   const name =
     $("productName").value.trim();
 
-  if(!name) return;
+
+  if(!name)
+    return;
 
 
-  const id = safeId(name);
+  const id =
+    safeId(name);
+
+
+  const category =
+    $("productCategory").value;
+
+
+  const existing =
+    window.__productsData?.[id];
+
+
+  if(existing){
+
+    alert(
+      "Esse produto já existe."
+    );
+
+    return;
+
+  }
 
 
   await set(
@@ -570,12 +1248,14 @@ async function createProduct(){
       `users/${currentUser.uid}/products/${id}`
     ),
     {
-      name
+      name,
+      category
     }
   );
 
 
-  $("productName").value = "";
+  $("productName").value =
+    "";
 
 }
 
@@ -595,23 +1275,144 @@ $("productName").addEventListener(
 );
 
 
-function escapeHtml(s){
+/* =========================================================
+   EDITAR PRODUTO
+   IMPORTANTE:
+   O ID não muda.
+   Assim os QR já impressos continuam a funcionar.
+========================================================= */
 
-  return s.replace(
-    /[&<>"']/g,
-    c => ({
-      "&":"&amp;",
-      "<":"&lt;",
-      ">":"&gt;",
-      '"':"&quot;",
-      "'":"&#39;"
-    }[c])
+async function editProduct(
+  id,
+  product
+){
+
+  const newName =
+    prompt(
+      "Nome do produto:",
+      product.name
+    );
+
+
+  if(newName === null)
+    return;
+
+
+  const cleanName =
+    newName.trim();
+
+
+  if(!cleanName)
+    return;
+
+
+  const newCategory =
+    prompt(
+      "Sector do supermercado:",
+      getCategory(product)
+    );
+
+
+  if(newCategory === null)
+    return;
+
+
+  const cleanCategory =
+    newCategory.trim() ||
+    "Outros";
+
+
+  await update(
+    ref(
+      db,
+      `users/${currentUser.uid}/products/${id}`
+    ),
+    {
+      name:
+        cleanName,
+
+      category:
+        cleanCategory
+    }
+  );
+
+
+  /*
+    Atualiza também os itens da lista
+    que tenham o mesmo ID, quando possível.
+  */
+
+  const shopping =
+    window.__shoppingData || {};
+
+
+  if(shopping[id]){
+
+    await update(
+      ref(
+        db,
+        `users/${currentUser.uid}/shopping/${id}`
+      ),
+      {
+        name:
+          cleanName,
+
+        category:
+          cleanCategory
+      }
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   ELIMINAR PRODUTO
+========================================================= */
+
+async function deleteProduct(
+  id,
+  product
+){
+
+  const ok =
+    confirm(
+      `Eliminar "${product.name}" dos Produtos e QR?\n\n` +
+      `O produto deixará de existir na base de dados e ` +
+      `o QR correspondente deixará de funcionar.`
+    );
+
+
+  if(!ok)
+    return;
+
+
+  await remove(
+    ref(
+      db,
+      `users/${currentUser.uid}/products/${id}`
+    )
   );
 
 }
 
 
-function showQR(id,name){
+/* =========================================================
+   QR
+========================================================= */
+
+function showQR(
+  id,
+  name
+){
+
+  /*
+    Mantemos exatamente o mesmo formato:
+    #add=ID
+
+    Por isso os QR existentes continuam válidos.
+  */
 
   const url =
     `${location.origin}${location.pathname}#add=${encodeURIComponent(id)}`;
@@ -632,7 +1433,7 @@ function showQR(id,name){
       <img
         class="qr"
         alt="QR de ${escapeHtml(name)}"
-        src="https://quickchart.io/qr?size=260&text=${encodeURIComponent(url)}"
+        src="https://quickchart.io/qr?size=300&text=${encodeURIComponent(url)}"
       >
 
       <p class="muted">
@@ -645,22 +1446,94 @@ function showQR(id,name){
         ${escapeHtml(url)}
       </p>
 
-      <button id="closeQR">
-        Fechar
-      </button>
+      <div class="row" style="justify-content:center">
+
+        <button id="printQR">
+          🖨️ Imprimir QR
+        </button>
+
+        <button id="closeQR">
+          Fechar
+        </button>
+
+      </div>
 
     </div>
 
   `;
 
 
-  document.body.appendChild(dialog);
+  document.body.appendChild(
+    dialog
+  );
+
 
   dialog.showModal();
 
 
-  dialog.querySelector("#closeQR").onclick =
-    () => dialog.close();
+  dialog.querySelector(
+    "#closeQR"
+  ).onclick =
+    () =>
+      dialog.close();
+
+
+  dialog.querySelector(
+    "#printQR"
+  ).onclick =
+    () => {
+
+      const w =
+        window.open(
+          "",
+          "_blank"
+        );
+
+
+      w.document.write(`
+
+        <html>
+
+        <head>
+          <title>
+            ${escapeHtml(name)}
+          </title>
+        </head>
+
+        <body
+          style="
+            text-align:center;
+            font-family:Arial;
+          "
+        >
+
+          <h2>
+            ${escapeHtml(name)}
+          </h2>
+
+          <img
+            src="https://quickchart.io/qr?size=500&text=${encodeURIComponent(url)}"
+          >
+
+          <p>
+            ${escapeHtml(url)}
+          </p>
+
+          <script>
+            window.onload =
+              () => window.print();
+          <\/script>
+
+        </body>
+
+        </html>
+
+      `);
+
+
+      w.document.close();
+
+    };
 
 
   dialog.addEventListener(
@@ -671,9 +1544,14 @@ function showQR(id,name){
 }
 
 
+/* =========================================================
+   QR LIDO PELO TELEMÓVEL
+========================================================= */
+
 async function processQR(){
 
-  const hash = location.hash;
+  const hash =
+    location.hash;
 
 
   if(
@@ -693,6 +1571,12 @@ async function processQR(){
     );
 
 
+  /*
+    Remove imediatamente o hash
+    para não voltar a adicionar
+    o mesmo produto ao atualizar.
+  */
+
   history.replaceState(
     null,
     "",
@@ -707,7 +1591,8 @@ async function processQR(){
   if(product){
 
     await addShopping(
-      product.name
+      product.name,
+      getCategory(product)
     );
 
 
@@ -718,7 +1603,7 @@ async function processQR(){
   }else{
 
     alert(
-      "Produto não encontrado. " +
+      "Produto não encontrado.\n\n" +
       "O QR pode pertencer a um produto que foi apagado."
     );
 
@@ -727,50 +1612,148 @@ async function processQR(){
 }
 
 
+/* =========================================================
+   LIMPAR COMPRADOS
+========================================================= */
+
+$("clearBought").onclick =
+  async () => {
+
+    const items =
+      window.__shoppingData || {};
+
+
+    const tasks =
+      Object.entries(items)
+        .filter(
+          ([,item]) =>
+            item.bought
+        )
+        .map(
+          ([id]) =>
+            remove(
+              ref(
+                db,
+                `users/${currentUser.uid}/shopping/${id}`
+              )
+            )
+        );
+
+
+    await Promise.all(tasks);
+
+  };
+
+
+/* =========================================================
+   LIMPAR LISTA
+========================================================= */
+
+$("clearList").onclick =
+  async () => {
+
+    const ok =
+      confirm(
+        "Eliminar toda a lista de compras?"
+      );
+
+
+    if(!ok)
+      return;
+
+
+    await remove(
+      ref(
+        db,
+        `users/${currentUser.uid}/shopping`
+      )
+    );
+
+  };
+
+
+/* =========================================================
+   IMPRIMIR
+========================================================= */
+
+$("printBtn").onclick =
+  () =>
+    window.print();
+
+
+/* =========================================================
+   FIREBASE AUTH
+========================================================= */
+
 onAuthStateChanged(
   auth,
   user => {
 
-    currentUser = user;
+    currentUser =
+      user;
 
 
     if(!user){
 
-      $("app").classList.add("hidden");
+      $("app")
+        .classList
+        .add("hidden");
 
-      $("loginArea").classList.remove("hidden");
+
+      $("loginArea")
+        .classList
+        .remove("hidden");
+
 
       setStatus(
         "É necessário iniciar sessão."
       );
 
 
-      if(stopList)
-        stopList();
+      if(stopList){
 
-      if(stopProducts)
+        stopList();
+        stopList = null;
+
+      }
+
+
+      if(stopProducts){
+
         stopProducts();
+        stopProducts = null;
+
+      }
+
 
       return;
 
     }
 
 
-    $("loginArea").classList.add("hidden");
+    $("loginArea")
+      .classList
+      .add("hidden");
 
-    $("app").classList.remove("hidden");
+
+    $("app")
+      .classList
+      .remove("hidden");
 
 
-    $("userName").textContent =
-      user.displayName ||
-      user.email ||
-      "Utilizador";
+    $("userName")
+      .textContent =
+        user.displayName ||
+        user.email ||
+        "Utilizador";
 
 
     setStatus(
       "✓ Sincronizado com a Firebase"
     );
 
+
+    /* LISTA */
 
     const listRef =
       ref(
@@ -787,6 +1770,7 @@ onAuthStateChanged(
           window.__shoppingData =
             snap.val() || {};
 
+
           renderList(
             window.__shoppingData
           );
@@ -794,6 +1778,8 @@ onAuthStateChanged(
         }
       );
 
+
+    /* PRODUTOS */
 
     const productsRef =
       ref(
@@ -810,9 +1796,11 @@ onAuthStateChanged(
           window.__productsData =
             snap.val() || {};
 
+
           renderProducts(
             window.__productsData
           );
+
 
           processQR();
 
@@ -822,6 +1810,10 @@ onAuthStateChanged(
   }
 );
 
+
+/* =========================================================
+   QR QUANDO O HASH MUDA
+========================================================= */
 
 window.addEventListener(
   "hashchange",
