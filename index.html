@@ -6,9 +6,11 @@
 <title>Lista de compras</title>
 
 <style>
+*{box-sizing:border-box}
+
 body{
   font-family:Arial,sans-serif;
-  max-width:760px;
+  max-width:900px;
   margin:0 auto;
   padding:20px;
   background:#f7f7f7;
@@ -17,7 +19,6 @@ body{
 
 h1{margin:0 0 8px}
 h2{margin-top:0}
-h3{margin:0 0 8px}
 
 .muted{
   color:#666;
@@ -32,12 +33,15 @@ h3{margin:0 0 8px}
   box-shadow:0 2px 10px #0001
 }
 
+button,input,select{
+  font:inherit;
+  padding:9px 10px;
+  border:1px solid #ccc;
+  border-radius:9px
+}
+
 button{
-  border:0;
-  border-radius:9px;
-  padding:9px 12px;
-  cursor:pointer;
-  font-size:15px
+  cursor:pointer
 }
 
 .primary{
@@ -53,14 +57,6 @@ button{
   padding:6px 10px
 }
 
-input,select{
-  padding:10px;
-  border:1px solid #ccc;
-  border-radius:9px;
-  font-size:15px;
-  box-sizing:border-box
-}
-
 .row{
   display:flex;
   gap:8px;
@@ -68,13 +64,8 @@ input,select{
   flex-wrap:wrap
 }
 
-#loginArea{
-  text-align:center;
-  padding:20px
-}
-
 .hidden{
-  display:none
+  display:none!important
 }
 
 .search{
@@ -82,11 +73,51 @@ input,select{
   margin:10px 0
 }
 
+.searchWrap{
+  position:relative;
+  flex:1;
+  min-width:220px
+}
+
+#manualName{
+  width:100%
+}
+
+.suggestions{
+  position:absolute;
+  left:0;
+  right:0;
+  top:calc(100% + 4px);
+  background:#fff;
+  border:1px solid #ccc;
+  border-radius:9px;
+  box-shadow:0 4px 12px #0002;
+  z-index:20;
+  overflow:hidden
+}
+
+.suggestion{
+  padding:10px 12px;
+  cursor:pointer;
+  border-bottom:1px solid #eee
+}
+
+.suggestion:hover{
+  background:#f2f2f2
+}
+
+.suggestionSector{
+  display:block;
+  color:#777;
+  font-size:12px;
+  margin-top:2px
+}
+
 .item{
   display:flex;
   align-items:center;
-  gap:8px;
-  padding:10px 0;
+  gap:9px;
+  padding:11px 0;
   border-bottom:1px solid #eee
 }
 
@@ -95,7 +126,8 @@ input,select{
 }
 
 .name{
-  flex:1
+  flex:1;
+  min-width:120px
 }
 
 .qty{
@@ -109,12 +141,20 @@ input,select{
   color:#888
 }
 
+.sectorTitle{
+  font-weight:bold;
+  font-size:18px;
+  margin-top:18px;
+  padding:7px 0;
+  border-bottom:2px solid #ddd
+}
+
 .product{
   display:flex;
   justify-content:space-between;
   align-items:center;
   gap:10px;
-  padding:11px 0;
+  padding:10px 0;
   border-bottom:1px solid #eee
 }
 
@@ -122,102 +162,38 @@ input,select{
   border-bottom:0
 }
 
-.product-info{
-  flex:1
-}
-
-.product-category{
+.productMeta{
   color:#777;
   font-size:13px;
   margin-top:3px
 }
 
-.product-actions{
-  display:flex;
-  gap:5px;
-  flex-wrap:wrap;
-  justify-content:flex-end
-}
-
 .qr{
-  width:220px;
-  max-width:100%;
+  width:260px;
+  max-width:90%;
   display:block;
   margin:10px auto
 }
 
-.sector{
-  margin-top:18px
+dialog{
+  border:0;
+  border-radius:14px;
+  padding:24px;
+  box-shadow:0 5px 30px #0004
 }
 
-.sector-title{
-  border-bottom:2px solid #ddd;
-  padding-bottom:6px;
-  margin-bottom:4px
+dialog::backdrop{
+  background:#0006
 }
 
-.toolbar{
-  display:flex;
-  justify-content:space-between;
-  gap:8px;
-  align-items:center;
-  flex-wrap:wrap
-}
-
-@media(max-width:520px){
+@media(max-width:650px){
   body{
-    padding:12px
+    padding:10px
   }
 
   .product{
-    align-items:flex-start
-  }
-
-  .product-actions{
-    max-width:180px
-  }
-}
-
-@media print{
-  body{
-    max-width:none;
-    background:#fff;
-    padding:0
-  }
-
-  body > h1,
-  body > #status{
-    display:none!important
-  }
-
-  #app > .card:first-child,
-  #app > .card:nth-child(3){
-    display:none!important
-  }
-
-  #shoppingControls,
-  #manualArea,
-  #listSearch{
-    display:none!important
-  }
-
-  #shoppingCard{
-    box-shadow:none;
-    margin:0;
-    padding:0
-  }
-
-  .item button,
-  .item input{
-    display:none!important
-  }
-
-  .item{
-    padding:5px 0
-  }
-
-  .sector-title{
-    margin-top:15px
+    align-items:flex-start;
+    flex-direction:column
   }
 }
 </style>
@@ -255,38 +231,27 @@ input,select{
   </div>
 
 
-  <!-- LISTA DE COMPRAS -->
+  <!-- LISTA -->
 
-  <div class="card" id="shoppingCard">
+  <div class="card">
 
-    <div class="toolbar">
+    <div class="row" style="justify-content:space-between">
       <h2>Lista</h2>
 
-      <button id="printBtn" class="small">
-        🖨️ Imprimir
+      <button id="printList" class="small">
+        🖨️ Imprimir lista
       </button>
     </div>
 
-    <input
-      id="listSearch"
-      class="search"
-      placeholder="🔎 Pesquisar na lista"
-    >
-
     <div
-      id="shoppingControls"
       class="row"
       style="margin-bottom:10px"
     >
-
-      <button id="clearBought" class="small danger">
-        Limpar comprados
-      </button>
-
-      <button id="clearList" class="small danger">
-        Limpar lista
-      </button>
-
+      <input
+        id="listSearch"
+        class="search"
+        placeholder="🔎 Pesquisar na lista..."
+      >
     </div>
 
     <div id="list"></div>
@@ -296,42 +261,36 @@ input,select{
     </p>
 
     <div
-      id="manualArea"
-      class="card"
-      style="margin-top:15px;background:#fafafa"
+      class="row"
+      style="margin-top:12px;align-items:flex-start"
     >
 
-      <strong>Adicionar manualmente</strong>
-
-      <div class="row" style="margin-top:8px">
+      <div class="searchWrap">
 
         <input
           id="manualName"
-          placeholder="Nome do produto"
-          style="flex:1"
+          autocomplete="off"
+          placeholder="🔎 Pesquisar produto para adicionar..."
         >
 
-        <select id="manualCategory">
-
-          <option>Frutas e legumes</option>
-          <option>Padaria</option>
-          <option>Laticínios e ovos</option>
-          <option>Carne e peixe</option>
-          <option>Mercearia</option>
-          <option>Congelados</option>
-          <option>Bebidas</option>
-          <option>Higiene e limpeza</option>
-          <option>Casa</option>
-          <option>Outros</option>
-
-        </select>
-
-        <button id="manualAdd" class="primary">
-          Adicionar
-        </button>
+        <div
+          id="productSuggestions"
+          class="suggestions hidden"
+        ></div>
 
       </div>
+
+      <button id="manualAdd" class="primary">
+        Adicionar
+      </button>
+
     </div>
+
+    <p class="muted" style="margin:8px 0 0">
+      Escreve para procurar um produto já criado.
+      Também podes escrever um produto novo e carregar em
+      “Adicionar”.
+    </p>
 
   </div>
 
@@ -340,11 +299,36 @@ input,select{
 
   <div class="card">
 
-    <h2>Produtos e QR</h2>
+    <div
+      class="row"
+      style="justify-content:space-between"
+    >
+
+      <h2>Produtos e QR</h2>
+
+      <div class="row">
+
+        <button
+          id="openQRList"
+          class="small primary"
+        >
+          🖨️ Preparar QR
+        </button>
+
+        <button
+          id="exportQRList"
+          class="small"
+        >
+          ⬇️ Exportar QR
+        </button>
+
+      </div>
+
+    </div>
 
     <p class="muted">
-      Cada produto tem um QR próprio. Podes editar o nome,
-      alterar o sector, adicionar à lista, ver o QR ou eliminar.
+      Cria cada produto uma vez. Podes editar o nome e o
+      sector sem alterar o identificador do QR existente.
     </p>
 
     <div class="row">
@@ -352,25 +336,31 @@ input,select{
       <input
         id="productName"
         placeholder="Ex.: Leite"
-        style="flex:1"
       >
 
-      <select id="productCategory">
-
-        <option>Frutas e legumes</option>
-        <option>Padaria</option>
-        <option>Laticínios e ovos</option>
-        <option>Carne e peixe</option>
-        <option>Mercearia</option>
-        <option>Congelados</option>
-        <option>Bebidas</option>
-        <option>Higiene e limpeza</option>
-        <option>Casa</option>
-        <option>Outros</option>
-
+      <select
+        id="productSector"
+      >
+        <option value="Mercearia">Mercearia</option>
+        <option value="Frutas e legumes">
+          Frutas e legumes
+        </option>
+        <option value="Talho">Talho</option>
+        <option value="Peixaria">Peixaria</option>
+        <option value="Laticínios">Laticínios</option>
+        <option value="Congelados">Congelados</option>
+        <option value="Bebidas">Bebidas</option>
+        <option value="Padaria">Padaria</option>
+        <option value="Higiene">Higiene</option>
+        <option value="Limpeza">Limpeza</option>
+        <option value="Animais">Animais</option>
+        <option value="Outros">Outros</option>
       </select>
 
-      <button id="createProduct" class="primary">
+      <button
+        id="createProduct"
+        class="primary"
+      >
         Criar produto
       </button>
 
@@ -379,7 +369,7 @@ input,select{
     <input
       id="productSearch"
       class="search"
-      placeholder="🔎 Pesquisar produtos"
+      placeholder="🔎 Pesquisar produtos / QR..."
     >
 
     <div id="products"></div>
@@ -393,7 +383,8 @@ input,select{
 
 import {
   initializeApp
-} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+}
+from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
 
 
 import {
@@ -402,7 +393,8 @@ import {
   signInWithPopup,
   signOut,
   onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+}
+from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 
 
 import {
@@ -412,13 +404,9 @@ import {
   set,
   update,
   remove
-} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
+}
+from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
 
-
-/* =========================================================
-   FIREBASE
-   Mantida exatamente a configuração existente
-========================================================= */
 
 const firebaseConfig = {
 
@@ -454,9 +442,7 @@ const db = getDatabase(app);
 
 const provider = new GoogleAuthProvider();
 
-
-const $ = id =>
-  document.getElementById(id);
+const $ = id => document.getElementById(id);
 
 
 let currentUser = null;
@@ -465,17 +451,36 @@ let stopList = null;
 
 let stopProducts = null;
 
-window.__shoppingData = {};
 
-window.__productsData = {};
-
-
-/* =========================================================
+/* =========================
    UTILITÁRIOS
-========================================================= */
+========================= */
 
-function setStatus(text){
-  $("status").textContent = text;
+function escapeHtml(value){
+
+  return String(value ?? "")
+    .replace(
+      /[&<>"']/g,
+      c => ({
+        "&":"&amp;",
+        "<":"&lt;",
+        ">":"&gt;",
+        '"':"&quot;",
+        "'":"&#39;"
+      }[c])
+    );
+
+}
+
+
+function normalizeSearch(text){
+
+  return String(text || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g,"")
+    .toLowerCase()
+    .trim();
+
 }
 
 
@@ -494,45 +499,16 @@ function safeId(name){
 }
 
 
-function escapeHtml(s){
+function setStatus(text){
 
-  return String(s).replace(
-    /[&<>"']/g,
-    c => ({
-      "&":"&amp;",
-      "<":"&lt;",
-      ">":"&gt;",
-      '"':"&quot;",
-      "'":"&#39;"
-    }[c])
-  );
+  $("status").textContent = text;
 
 }
 
 
-function getCategory(item){
-
-  return item.category || "Outros";
-
-}
-
-
-function getProductByName(name){
-
-  const products =
-    Object.values(window.__productsData || {});
-
-  return products.find(
-    p => String(p.name).toLowerCase() ===
-         String(name).toLowerCase()
-  );
-
-}
-
-
-/* =========================================================
+/* =========================
    LOGIN
-========================================================= */
+========================= */
 
 async function login(){
 
@@ -559,284 +535,250 @@ async function login(){
 
 $("loginBtn").onclick = login;
 
-
 $("logoutBtn").onclick = () =>
   signOut(auth);
 
 
-/* =========================================================
+/* =========================
    LISTA
-========================================================= */
+========================= */
+
+function getProductForShopping(item){
+
+  const products =
+    window.__productsData || {};
+
+  return Object.values(products)
+    .find(
+      p => normalizeSearch(p.name) ===
+           normalizeSearch(item.name)
+    );
+
+}
+
 
 function renderList(data){
 
-  window.__shoppingData =
-    data || {};
-
-  const list =
-    $("list");
+  const list = $("list");
 
   list.innerHTML = "";
 
-
   const search =
-    $("listSearch").value
-      .trim()
-      .toLocaleLowerCase("pt");
+    normalizeSearch(
+      $("listSearch").value
+    );
 
+  const entries =
+    data
+      ? Object.entries(data)
+      : [];
 
-  let entries =
-    Object.entries(window.__shoppingData);
-
-
-  if(search){
-
-    entries =
-      entries.filter(
-        ([,item]) =>
-          String(item.name)
-            .toLocaleLowerCase("pt")
-            .includes(search)
-          ||
-          getCategory(item)
-            .toLocaleLowerCase("pt")
-            .includes(search)
-      );
-
-  }
-
+  const filtered =
+    entries.filter(
+      ([id,item]) =>
+        !search ||
+        normalizeSearch(item.name)
+          .includes(search)
+    );
 
   $("empty").style.display =
-    entries.length
+    filtered.length
       ? "none"
       : "block";
 
 
-  entries.sort((a,b)=>{
-
-    const A = a[1];
-
-    const B = b[1];
-
-    return (
-      Number(A.bought) -
-      Number(B.bought)
-    )
-    ||
-    getCategory(A).localeCompare(
-      getCategory(B),
-      "pt"
-    )
-    ||
-    String(A.name).localeCompare(
-      String(B.name),
-      "pt"
-    );
-
-  });
+  const bySector = {};
 
 
-  const groups = {};
+  for(
+    const [id,item]
+    of filtered
+  ){
 
+    const product =
+      getProductForShopping(item);
 
-  for(const [id,item] of entries){
+    const sector =
+      product?.sector ||
+      item.sector ||
+      "Outros";
 
-    const category =
-      getCategory(item);
+    if(!bySector[sector])
+      bySector[sector] = [];
 
-    if(!groups[category])
-      groups[category] = [];
-
-    groups[category].push(
+    bySector[sector].push(
       [id,item]
     );
 
   }
 
 
-  const categories =
-    Object.keys(groups).sort(
+  Object.keys(bySector)
+    .sort(
       (a,b) =>
         a.localeCompare(b,"pt")
-    );
+    )
+    .forEach(sector => {
 
-
-  for(const category of categories){
-
-    const sector =
-      document.createElement("div");
-
-    sector.className =
-      "sector";
-
-
-    const title =
-      document.createElement("h3");
-
-    title.className =
-      "sector-title";
-
-    title.textContent =
-      category;
-
-
-    sector.appendChild(title);
-
-
-    for(
-      const [id,item]
-      of groups[category]
-    ){
-
-      const row =
+      const title =
         document.createElement("div");
 
-      row.className =
-        "item" +
-        (item.bought
-          ? " bought"
-          : "");
+      title.className =
+        "sectorTitle";
+
+      title.textContent =
+        sector;
+
+      list.appendChild(title);
 
 
-      const check =
-        document.createElement("input");
-
-      check.type =
-        "checkbox";
-
-      check.checked =
-        !!item.bought;
-
-
-      check.onchange =
-        () => {
-
-          update(
-            ref(
-              db,
-              `users/${currentUser.uid}/shopping/${id}`
-            ),
-            {
-              bought:
-                check.checked
-            }
-          );
-
-        };
-
-
-      const name =
-        document.createElement("span");
-
-      name.className =
-        "name";
-
-      name.textContent =
-        item.name;
-
-
-      const minus =
-        document.createElement("button");
-
-      minus.className =
-        "small";
-
-      minus.textContent =
-        "−";
-
-      minus.onclick =
-        () =>
-          changeQty(
-            id,
-            item,
-            -1
-          );
-
-
-      const qty =
-        document.createElement("span");
-
-      qty.className =
-        "qty";
-
-      qty.textContent =
-        item.qty || 1;
-
-
-      const plus =
-        document.createElement("button");
-
-      plus.className =
-        "small";
-
-      plus.textContent =
-        "+";
-
-      plus.onclick =
-        () =>
-          changeQty(
-            id,
-            item,
-            1
-          );
-
-
-      const del =
-        document.createElement("button");
-
-      del.className =
-        "small danger";
-
-      del.textContent =
-        "🗑️";
-
-      del.onclick =
-        () => {
-
-          remove(
-            ref(
-              db,
-              `users/${currentUser.uid}/shopping/${id}`
+      bySector[sector].sort(
+        (a,b) =>
+          String(a[1].name)
+            .localeCompare(
+              String(b[1].name),
+              "pt"
             )
-          );
-
-        };
-
-
-      row.append(
-        check,
-        name,
-        minus,
-        qty,
-        plus,
-        del
       );
 
 
-      sector.appendChild(row);
+      for(
+        const [id,item]
+        of bySector[sector]
+      ){
 
-    }
+        const row =
+          document.createElement("div");
+
+        row.className =
+          "item" +
+          (item.bought
+            ? " bought"
+            : "");
 
 
-    list.appendChild(sector);
+        const check =
+          document.createElement("input");
 
-  }
+        check.type =
+          "checkbox";
+
+        check.checked =
+          !!item.bought;
+
+        check.onchange =
+          () =>
+            update(
+              ref(
+                db,
+                `users/${currentUser.uid}/shopping/${id}`
+              ),
+              {
+                bought:
+                  check.checked
+              }
+            );
+
+
+        const name =
+          document.createElement("span");
+
+        name.className =
+          "name";
+
+        name.textContent =
+          item.name;
+
+
+        const minus =
+          document.createElement("button");
+
+        minus.className =
+          "small";
+
+        minus.textContent =
+          "−";
+
+        minus.onclick =
+          () =>
+            changeQty(
+              id,
+              item,
+              -1
+            );
+
+
+        const qty =
+          document.createElement("span");
+
+        qty.className =
+          "qty";
+
+        qty.textContent =
+          item.qty || 1;
+
+
+        const plus =
+          document.createElement("button");
+
+        plus.className =
+          "small";
+
+        plus.textContent =
+          "+";
+
+        plus.onclick =
+          () =>
+            changeQty(
+              id,
+              item,
+              1
+            );
+
+
+        const del =
+          document.createElement("button");
+
+        del.className =
+          "small danger";
+
+        del.textContent =
+          "🗑️";
+
+        del.onclick =
+          () =>
+            remove(
+              ref(
+                db,
+                `users/${currentUser.uid}/shopping/${id}`
+              )
+            );
+
+
+        row.append(
+          check,
+          name,
+          minus,
+          qty,
+          plus,
+          del
+        );
+
+        list.appendChild(row);
+
+      }
+
+    });
 
 }
 
 
-$("listSearch").addEventListener(
-  "input",
+$("listSearch").oninput =
   () =>
     renderList(
-      window.__shoppingData
-    )
-);
+      window.__shoppingData || {}
+    );
 
-
-/* =========================================================
-   QUANTIDADES
-========================================================= */
 
 async function changeQty(
   id,
@@ -846,7 +788,6 @@ async function changeQty(
 
   const current =
     item.qty || 1;
-
 
   if(
     delta < 0 &&
@@ -882,24 +823,21 @@ async function changeQty(
 }
 
 
-/* =========================================================
-   ADICIONAR À LISTA
-========================================================= */
-
 async function addShopping(
   name,
-  category
+  forcedId = null,
+  forcedSector = null
 ){
 
   name =
-    String(name).trim();
-
+    name.trim();
 
   if(!name)
     return;
 
 
   const id =
+    forcedId ||
     safeId(name);
 
 
@@ -914,23 +852,6 @@ async function addShopping(
     window.__shoppingData?.[id];
 
 
-  let finalCategory =
-    category;
-
-
-  if(!finalCategory){
-
-    const product =
-      getProductByName(name);
-
-    finalCategory =
-      product?.category ||
-      existing?.category ||
-      "Outros";
-
-  }
-
-
   if(existing){
 
     await update(
@@ -940,32 +861,33 @@ async function addShopping(
           (existing.qty || 1) + 1,
 
         bought:
-          false,
-
-        name:
-          existing.name,
-
-        category:
-          finalCategory
+          false
       }
     );
 
   }else{
 
+    const product =
+      Object.values(
+        window.__productsData || {}
+      )
+      .find(
+        p =>
+          normalizeSearch(p.name) ===
+          normalizeSearch(name)
+      );
+
+
     await set(
       r,
       {
-        name:
-          name,
-
-        qty:
-          1,
-
-        bought:
-          false,
-
-        category:
-          finalCategory
+        name,
+        qty:1,
+        bought:false,
+        sector:
+          forcedSector ||
+          product?.sector ||
+          "Outros"
       }
     );
 
@@ -974,44 +896,227 @@ async function addShopping(
 }
 
 
-/* =========================================================
-   ADIÇÃO MANUAL
-========================================================= */
+/* =========================
+   PESQUISA / ADICIONAR
+========================= */
 
-$("manualAdd").onclick =
-  async () => {
+function showProductSuggestions(){
 
-    await addShopping(
-      $("manualName").value,
-      $("manualCategory").value
+  const input =
+    $("manualName");
+
+  const box =
+    $("productSuggestions");
+
+  const term =
+    normalizeSearch(
+      input.value
     );
 
-    $("manualName").value =
-      "";
+
+  if(!term){
+
+    box.innerHTML = "";
+
+    box.classList.add(
+      "hidden"
+    );
+
+    return;
+
+  }
+
+
+  const matches =
+    Object.entries(
+      window.__productsData || {}
+    )
+    .filter(
+      ([id,p]) =>
+        normalizeSearch(p.name)
+          .includes(term)
+    )
+    .sort(
+      (a,b) =>
+        a[1].name.localeCompare(
+          b[1].name,
+          "pt"
+        )
+    )
+    .slice(0,8);
+
+
+  box.innerHTML = "";
+
+
+  if(!matches.length){
+
+    box.classList.add(
+      "hidden"
+    );
+
+    return;
+
+  }
+
+
+  matches.forEach(
+    ([id,p]) => {
+
+      const item =
+        document.createElement("div");
+
+      item.className =
+        "suggestion";
+
+      item.innerHTML =
+        `<strong>
+          ${escapeHtml(p.name)}
+        </strong>
+        <span class="suggestionSector">
+          ${escapeHtml(
+            p.sector || "Outros"
+          )}
+        </span>`;
+
+
+      item.onclick =
+        async () => {
+
+          await addShopping(
+            p.name,
+            id,
+            p.sector || "Outros"
+          );
+
+          $("manualName").value = "";
+
+          box.innerHTML = "";
+
+          box.classList.add(
+            "hidden"
+          );
+
+        };
+
+
+      box.appendChild(item);
+
+    }
+  );
+
+
+  box.classList.remove(
+    "hidden"
+  );
+
+}
+
+
+$("manualName").oninput =
+  showProductSuggestions;
+
+
+$("manualName").onkeydown =
+  e => {
+
+    if(e.key === "Enter"){
+
+      e.preventDefault();
+
+      $("manualAdd").click();
+
+    }
+
+    if(e.key === "Escape"){
+
+      $("productSuggestions")
+        .classList.add(
+          "hidden"
+        );
+
+    }
 
   };
 
 
-$("manualName").addEventListener(
-  "keydown",
+$("manualAdd").onclick =
+  async () => {
+
+    const value =
+      $("manualName")
+        .value
+        .trim();
+
+    if(!value)
+      return;
+
+
+    const exact =
+      Object.entries(
+        window.__productsData || {}
+      )
+      .find(
+        ([id,p]) =>
+          normalizeSearch(p.name) ===
+          normalizeSearch(value)
+      );
+
+
+    if(exact){
+
+      await addShopping(
+        exact[1].name,
+        exact[0],
+        exact[1].sector ||
+        "Outros"
+      );
+
+    }else{
+
+      await addShopping(
+        value
+      );
+
+    }
+
+
+    $("manualName").value = "";
+
+    $("productSuggestions")
+      .classList.add(
+        "hidden"
+      );
+
+  };
+
+
+document.addEventListener(
+  "click",
   e => {
 
-    if(e.key === "Enter")
-      $("manualAdd").click();
+    if(
+      !e.target.closest(
+        ".searchWrap"
+      )
+    ){
+
+      $("productSuggestions")
+        .classList.add(
+          "hidden"
+        );
+
+    }
 
   }
 );
 
 
-/* =========================================================
+/* =========================
    PRODUTOS
-========================================================= */
+========================= */
 
 function renderProducts(data){
-
-  window.__productsData =
-    data || {};
-
 
   const box =
     $("products");
@@ -1019,43 +1124,30 @@ function renderProducts(data){
   box.innerHTML = "";
 
 
-  const search =
-    $("productSearch").value
-      .trim()
-      .toLocaleLowerCase("pt");
-
-
-  let entries =
-    Object.entries(
-      window.__productsData
+  const q =
+    normalizeSearch(
+      $("productSearch").value
     );
 
 
-  if(search){
-
-    entries =
-      entries.filter(
-        ([,p]) =>
-          String(p.name)
-            .toLocaleLowerCase("pt")
-            .includes(search)
-          ||
-          String(p.category || "Outros")
-            .toLocaleLowerCase("pt")
-            .includes(search)
-      );
-
-  }
-
-
-  entries.sort(
-    (a,b) =>
-      String(a[1].name)
-        .localeCompare(
-          String(b[1].name),
-          "pt"
-        )
-  );
+  const entries =
+    Object.entries(data || {})
+    .filter(
+      ([id,p]) =>
+        !q ||
+        normalizeSearch(p.name)
+          .includes(q) ||
+        normalizeSearch(id)
+          .includes(q)
+    )
+    .sort(
+      (a,b) =>
+        String(a[1].name)
+          .localeCompare(
+            String(b[1].name),
+            "pt"
+          )
+    );
 
 
   for(
@@ -1073,8 +1165,8 @@ function renderProducts(data){
     const info =
       document.createElement("div");
 
-    info.className =
-      "product-info";
+    info.style.flex =
+      "1";
 
 
     const name =
@@ -1084,19 +1176,20 @@ function renderProducts(data){
       p.name;
 
 
-    const category =
+    const meta =
       document.createElement("div");
 
-    category.className =
-      "product-category";
+    meta.className =
+      "productMeta";
 
-    category.textContent =
-      getCategory(p);
+    meta.textContent =
+      p.sector ||
+      "Outros";
 
 
     info.append(
       name,
-      category
+      meta
     );
 
 
@@ -1104,7 +1197,7 @@ function renderProducts(data){
       document.createElement("div");
 
     actions.className =
-      "product-actions";
+      "row";
 
 
     const add =
@@ -1120,7 +1213,26 @@ function renderProducts(data){
       () =>
         addShopping(
           p.name,
-          getCategory(p)
+          id,
+          p.sector ||
+          "Outros"
+        );
+
+
+    const edit =
+      document.createElement("button");
+
+    edit.className =
+      "small";
+
+    edit.textContent =
+      "✏️ Editar";
+
+    edit.onclick =
+      () =>
+        editProduct(
+          id,
+          p
         );
 
 
@@ -1141,23 +1253,6 @@ function renderProducts(data){
         );
 
 
-    const edit =
-      document.createElement("button");
-
-    edit.className =
-      "small";
-
-    edit.textContent =
-      "Editar";
-
-    edit.onclick =
-      () =>
-        editProduct(
-          id,
-          p
-        );
-
-
     const del =
       document.createElement("button");
 
@@ -1165,20 +1260,34 @@ function renderProducts(data){
       "small danger";
 
     del.textContent =
-      "Eliminar";
+      "🗑️";
 
     del.onclick =
-      () =>
-        deleteProduct(
-          id,
-          p
-        );
+      async () => {
+
+        if(
+          confirm(
+            `Eliminar "${p.name}" dos Produtos e QR?\n\n` +
+            `O QR existente deixará de funcionar.`
+          )
+        ){
+
+          await remove(
+            ref(
+              db,
+              `users/${currentUser.uid}/products/${id}`
+            )
+          );
+
+        }
+
+      };
 
 
     actions.append(
       add,
-      qr,
       edit,
+      qr,
       del
     );
 
@@ -1196,24 +1305,19 @@ function renderProducts(data){
 }
 
 
-$("productSearch").addEventListener(
-  "input",
+$("productSearch").oninput =
   () =>
     renderProducts(
-      window.__productsData
-    )
-);
+      window.__productsData || {}
+    );
 
-
-/* =========================================================
-   CRIAR PRODUTO
-========================================================= */
 
 async function createProduct(){
 
   const name =
-    $("productName").value.trim();
-
+    $("productName")
+      .value
+      .trim();
 
   if(!name)
     return;
@@ -1223,18 +1327,12 @@ async function createProduct(){
     safeId(name);
 
 
-  const category =
-    $("productCategory").value;
-
-
-  const existing =
-    window.__productsData?.[id];
-
-
-  if(existing){
+  if(
+    window.__productsData?.[id]
+  ){
 
     alert(
-      "Esse produto já existe."
+      "Já existe um produto com esse identificador."
     );
 
     return;
@@ -1249,13 +1347,13 @@ async function createProduct(){
     ),
     {
       name,
-      category
+      sector:
+        $("productSector").value
     }
   );
 
 
-  $("productName").value =
-    "";
+  $("productName").value = "";
 
 }
 
@@ -1264,23 +1362,14 @@ $("createProduct").onclick =
   createProduct;
 
 
-$("productName").addEventListener(
-  "keydown",
+$("productName").onkeydown =
   e => {
 
     if(e.key === "Enter")
       createProduct();
 
-  }
-);
+  };
 
-
-/* =========================================================
-   EDITAR PRODUTO
-   IMPORTANTE:
-   O ID não muda.
-   Assim os QR já impressos continuam a funcionar.
-========================================================= */
 
 async function editProduct(
   id,
@@ -1293,33 +1382,28 @@ async function editProduct(
       product.name
     );
 
-
   if(newName === null)
     return;
 
 
-  const cleanName =
+  const name =
     newName.trim();
 
-
-  if(!cleanName)
+  if(!name)
     return;
 
 
-  const newCategory =
+  const sector =
     prompt(
-      "Sector do supermercado:",
-      getCategory(product)
+      "Sector do supermercado:\n\n" +
+      "Ex.: Mercearia, Higiene, " +
+      "Congelados, Outros...",
+      product.sector ||
+      "Outros"
     );
 
-
-  if(newCategory === null)
+  if(sector === null)
     return;
-
-
-  const cleanCategory =
-    newCategory.trim() ||
-    "Outros";
 
 
   await update(
@@ -1328,98 +1412,52 @@ async function editProduct(
       `users/${currentUser.uid}/products/${id}`
     ),
     {
-      name:
-        cleanName,
-
-      category:
-        cleanCategory
+      name,
+      sector:
+        sector.trim() ||
+        "Outros"
     }
   );
 
-
-  /*
-    Atualiza também os itens da lista
-    que tenham o mesmo ID, quando possível.
-  */
-
-  const shopping =
-    window.__shoppingData || {};
-
-
-  if(shopping[id]){
-
-    await update(
-      ref(
-        db,
-        `users/${currentUser.uid}/shopping/${id}`
-      ),
-      {
-        name:
-          cleanName,
-
-        category:
-          cleanCategory
-      }
-    );
-
-  }
-
 }
 
 
-/* =========================================================
-   ELIMINAR PRODUTO
-========================================================= */
+/* =========================
+   QR INDIVIDUAL
+========================= */
 
-async function deleteProduct(
-  id,
-  product
-){
+function qrUrl(id){
 
-  const ok =
-    confirm(
-      `Eliminar "${product.name}" dos Produtos e QR?\n\n` +
-      `O produto deixará de existir na base de dados e ` +
-      `o QR correspondente deixará de funcionar.`
-    );
-
-
-  if(!ok)
-    return;
-
-
-  await remove(
-    ref(
-      db,
-      `users/${currentUser.uid}/products/${id}`
-    )
+  return (
+    `${location.origin}` +
+    `${location.pathname}` +
+    `#add=${encodeURIComponent(id)}`
   );
 
 }
 
 
-/* =========================================================
-   QR
-========================================================= */
+function qrImageUrl(id,size=500){
+
+  return (
+    `https://quickchart.io/qr?size=${size}` +
+    `&text=${encodeURIComponent(
+      qrUrl(id)
+    )}`
+  );
+
+}
+
 
 function showQR(
   id,
   name
 ){
 
-  /*
-    Mantemos exatamente o mesmo formato:
-    #add=ID
-
-    Por isso os QR existentes continuam válidos.
-  */
-
-  const url =
-    `${location.origin}${location.pathname}#add=${encodeURIComponent(id)}`;
-
-
   const dialog =
-    document.createElement("dialog");
+    document.createElement(
+      "dialog"
+    );
 
 
   dialog.innerHTML = `
@@ -1433,30 +1471,21 @@ function showQR(
       <img
         class="qr"
         alt="QR de ${escapeHtml(name)}"
-        src="https://quickchart.io/qr?size=300&text=${encodeURIComponent(url)}"
+        src="${qrImageUrl(id,500)}"
       >
 
       <p class="muted">
-        Imprime este QR e coloca-o junto ao produto.
+        Este QR mantém-se válido mesmo que
+        alteres o nome do produto.
       </p>
 
-      <p
-        style="font-size:12px;word-break:break-all"
-      >
-        ${escapeHtml(url)}
-      </p>
+      <button id="printOne">
+        🖨️ Imprimir QR
+      </button>
 
-      <div class="row" style="justify-content:center">
-
-        <button id="printQR">
-          🖨️ Imprimir QR
-        </button>
-
-        <button id="closeQR">
-          Fechar
-        </button>
-
-      </div>
+      <button id="closeQR">
+        Fechar
+      </button>
 
     </div>
 
@@ -1467,86 +1496,1035 @@ function showQR(
     dialog
   );
 
-
   dialog.showModal();
 
 
   dialog.querySelector(
     "#closeQR"
   ).onclick =
-    () =>
-      dialog.close();
+    () => dialog.close();
 
 
   dialog.querySelector(
-    "#printQR"
-  ).onclick =
-    () => {
+    "#printOne"
+  ).onclick = () => {
 
-      const w =
-        window.open(
-          "",
-          "_blank"
-        );
+    const w =
+      window.open(
+        "",
+        "_blank"
+      );
+
+    if(!w)
+      return alert(
+        "Permite janelas de impressão para esta página."
+      );
 
 
-      w.document.write(`
+    w.document.write(`
 
-        <html>
+      <!doctype html>
 
-        <head>
-          <title>
-            ${escapeHtml(name)}
-          </title>
-        </head>
+      <html lang="pt-PT">
 
-        <body
-          style="
-            text-align:center;
+      <head>
+
+        <title>
+          ${escapeHtml(name)}
+        </title>
+
+        <style>
+
+          body{
             font-family:Arial;
-          "
-        >
+            text-align:center;
+            margin:20mm
+          }
 
-          <h2>
-            ${escapeHtml(name)}
-          </h2>
+          img{
+            width:60mm
+          }
 
-          <img
-            src="https://quickchart.io/qr?size=500&text=${encodeURIComponent(url)}"
-          >
+          h2{
+            font-size:18pt
+          }
 
-          <p>
-            ${escapeHtml(url)}
-          </p>
+        </style>
 
-          <script>
-            window.onload =
-              () => window.print();
-          <\/script>
+      </head>
 
-        </body>
+      <body>
 
-        </html>
+        <h2>
+          ${escapeHtml(name)}
+        </h2>
 
-      `);
+        <img src="${qrImageUrl(id,700)}">
+
+      </body>
+
+      </html>
+
+    `);
+
+    w.document.close();
+
+    w.focus();
+
+    setTimeout(
+      () => w.print(),
+      500
+    );
+
+  };
 
 
-      w.document.close();
-
-    };
-
-
-  dialog.addEventListener(
-    "close",
-    () => dialog.remove()
-  );
+  dialog.onclose =
+    () => dialog.remove();
 
 }
 
 
-/* =========================================================
-   QR LIDO PELO TELEMÓVEL
-========================================================= */
+/* =========================
+   IMPRESSÃO DA LISTA
+========================= */
+
+function printableListHtml(){
+
+  const data =
+    window.__shoppingData || {};
+
+  const products =
+    window.__productsData || {};
+
+
+  const entries =
+    Object.values(data)
+      .filter(
+        item => !item.bought
+      );
+
+
+  const groups = {};
+
+
+  for(
+    const item
+    of entries
+  ){
+
+    const product =
+      Object.values(products)
+        .find(
+          p =>
+            normalizeSearch(p.name) ===
+            normalizeSearch(item.name)
+        );
+
+
+    const sector =
+      product?.sector ||
+      item.sector ||
+      "Outros";
+
+
+    if(!groups[sector])
+      groups[sector] = [];
+
+
+    groups[sector].push(item);
+
+  }
+
+
+  let out =
+    "<h1>🛒 Lista de compras</h1>";
+
+
+  Object.keys(groups)
+    .sort(
+      (a,b) =>
+        a.localeCompare(
+          b,
+          "pt"
+        )
+    )
+    .forEach(
+      sector => {
+
+        out +=
+          `<h2>${escapeHtml(sector)}</h2>`;
+
+        out += "<ul>";
+
+
+        groups[sector]
+          .sort(
+            (a,b) =>
+              a.name.localeCompare(
+                b.name,
+                "pt"
+              )
+          )
+          .forEach(
+            item => {
+
+              out +=
+                `<li>${escapeHtml(item.name)} ` +
+                `— <strong>${item.qty || 1}</strong></li>`;
+
+            }
+          );
+
+
+        out += "</ul>";
+
+      }
+    );
+
+
+  if(!entries.length){
+
+    out +=
+      "<p>A lista de compras está vazia.</p>";
+
+  }
+
+
+  return out;
+
+}
+
+
+$("printList").onclick =
+  () => {
+
+    const w =
+      window.open(
+        "",
+        "_blank"
+      );
+
+    if(!w)
+      return alert(
+        "Permite janelas de impressão para esta página."
+      );
+
+
+    w.document.write(`
+
+      <html lang="pt-PT">
+
+      <head>
+
+        <title>
+          Lista de compras
+        </title>
+
+        <style>
+
+          body{
+            font-family:Arial;
+            padding:20px
+          }
+
+          h2{
+            border-bottom:1px solid #ccc;
+            padding-bottom:5px
+          }
+
+          li{
+            margin:9px 0
+          }
+
+        </style>
+
+      </head>
+
+      <body>
+
+        ${printableListHtml()}
+
+      </body>
+
+      </html>
+
+    `);
+
+    w.document.close();
+
+    w.focus();
+
+    setTimeout(
+      () => w.print(),
+      300
+    );
+
+  };
+
+
+/* =====================================================
+   NOVA FUNÇÃO:
+   EDITOR COMPLETO DE TODOS OS QR
+===================================================== */
+
+function createQREditorHTML(){
+
+  const products =
+    window.__productsData || {};
+
+
+  const entries =
+    Object.entries(products)
+      .sort(
+        (a,b) =>
+          String(a[1].name)
+            .localeCompare(
+              String(b[1].name),
+              "pt"
+            )
+      );
+
+
+  const cards =
+    entries.map(
+      ([id,p]) => {
+
+        const url =
+          qrUrl(id);
+
+        const image =
+          `https://quickchart.io/qr?size=700&text=${encodeURIComponent(url)}`;
+
+
+        return `
+
+          <div
+            class="qr-card"
+            data-id="${escapeHtml(id)}"
+          >
+
+            <img
+              class="qr-image"
+              src="${image}"
+              alt=""
+            >
+
+            <div
+              class="qr-name"
+              contenteditable="true"
+              spellcheck="false"
+            >
+              ${escapeHtml(p.name)}
+            </div>
+
+            <div class="qr-sector">
+              ${escapeHtml(
+                p.sector || "Outros"
+              )}
+            </div>
+
+          </div>
+
+        `;
+
+      }
+    )
+    .join("");
+
+
+  return `
+
+<!doctype html>
+
+<html lang="pt-PT">
+
+<head>
+
+<meta charset="utf-8">
+
+<meta
+  name="viewport"
+  content="width=device-width,initial-scale=1"
+>
+
+<title>
+  QR dos produtos
+</title>
+
+
+<style>
+
+:root{
+
+  --qr-size:40mm;
+
+  --columns:3;
+
+  --gap:6mm;
+
+  --name-size:12pt;
+
+  --sector-size:9pt;
+
+}
+
+
+*{
+  box-sizing:border-box
+}
+
+
+body{
+
+  margin:0;
+
+  font-family:Arial,sans-serif;
+
+  background:#eee;
+
+  color:#111;
+
+}
+
+
+.toolbar{
+
+  position:sticky;
+
+  top:0;
+
+  z-index:100;
+
+  background:white;
+
+  border-bottom:1px solid #ccc;
+
+  padding:12px;
+
+  display:flex;
+
+  flex-wrap:wrap;
+
+  gap:8px;
+
+  align-items:center;
+
+}
+
+
+.toolbar label{
+
+  display:flex;
+
+  align-items:center;
+
+  gap:5px;
+
+  font-size:14px;
+
+}
+
+
+.toolbar input,
+.toolbar select,
+.toolbar button{
+
+  font:inherit;
+
+  padding:7px 9px;
+
+  border:1px solid #bbb;
+
+  border-radius:7px;
+
+}
+
+
+.toolbar button{
+
+  cursor:pointer;
+
+  background:#fff;
+
+}
+
+
+.toolbar .primary{
+
+  background:#222;
+
+  color:#fff;
+
+}
+
+
+.help{
+
+  padding:8px 12px;
+
+  font-size:13px;
+
+  color:#555;
+
+  background:#fff;
+
+}
+
+
+.sheet{
+
+  width:210mm;
+
+  min-height:297mm;
+
+  margin:10mm auto;
+
+  padding:10mm;
+
+  background:white;
+
+}
+
+
+.grid{
+
+  display:grid;
+
+  grid-template-columns:
+    repeat(
+      var(--columns),
+      minmax(0,1fr)
+    );
+
+  gap:var(--gap);
+
+  align-items:start;
+
+}
+
+
+.qr-card{
+
+  text-align:center;
+
+  break-inside:avoid;
+
+  page-break-inside:avoid;
+
+}
+
+
+.qr-image{
+
+  width:var(--qr-size);
+
+  height:var(--qr-size);
+
+  max-width:100%;
+
+  display:block;
+
+  margin:0 auto 2mm;
+
+}
+
+
+.qr-name{
+
+  font-size:var(--name-size);
+
+  font-weight:bold;
+
+  line-height:1.15;
+
+  min-height:5mm;
+
+  padding:1mm;
+
+  outline:none;
+
+  word-break:break-word;
+
+}
+
+
+.qr-name:focus{
+
+  outline:1px dashed #888;
+
+}
+
+
+.qr-sector{
+
+  font-size:var(--sector-size);
+
+  color:#666;
+
+  margin-top:1mm;
+
+}
+
+
+@media print{
+
+  @page{
+
+    size:A4;
+
+    margin:0;
+
+  }
+
+
+  body{
+
+    background:white;
+
+  }
+
+
+  .toolbar,
+  .help{
+
+    display:none!important;
+
+  }
+
+
+  .sheet{
+
+    width:210mm;
+
+    min-height:297mm;
+
+    margin:0;
+
+    padding:10mm;
+
+  }
+
+}
+
+
+@media screen{
+
+  .qr-card{
+
+    background:#fff;
+
+    padding:3mm;
+
+    border:1px solid #ddd;
+
+    border-radius:2mm;
+
+  }
+
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<div class="toolbar">
+
+  <label>
+    QR:
+    <input
+      id="qrSize"
+      type="number"
+      min="10"
+      max="100"
+      value="40"
+    >
+    mm
+  </label>
+
+
+  <label>
+    Colunas:
+    <select id="columns">
+      <option value="1">1</option>
+      <option value="2">2</option>
+      <option value="3" selected>3</option>
+      <option value="4">4</option>
+      <option value="5">5</option>
+      <option value="6">6</option>
+    </select>
+  </label>
+
+
+  <label>
+    Espaço:
+    <input
+      id="gap"
+      type="number"
+      min="0"
+      max="30"
+      value="6"
+    >
+    mm
+  </label>
+
+
+  <label>
+    Nome:
+    <input
+      id="nameSize"
+      type="number"
+      min="6"
+      max="30"
+      value="12"
+    >
+    pt
+  </label>
+
+
+  <label>
+    <input
+      id="showSector"
+      type="checkbox"
+      checked
+    >
+    Mostrar sector
+  </label>
+
+
+  <button
+    id="print"
+    class="primary"
+  >
+    🖨️ Imprimir
+  </button>
+
+
+  <button
+    id="download"
+  >
+    ⬇️ Exportar HTML
+  </button>
+
+</div>
+
+
+<div class="help">
+
+  <strong>Como usar:</strong>
+  altera o tamanho, número de colunas e espaçamento.
+  Os nomes por baixo dos QR também podem ser editados
+  diretamente nesta página.
+  Depois carrega em <strong>Imprimir</strong>.
+
+</div>
+
+
+<div class="sheet">
+
+  <div class="grid">
+
+    ${cards}
+
+  </div>
+
+</div>
+
+
+<script>
+
+const root =
+  document.documentElement;
+
+
+const qrSize =
+  document.getElementById(
+    "qrSize"
+  );
+
+
+const columns =
+  document.getElementById(
+    "columns"
+  );
+
+
+const gap =
+  document.getElementById(
+    "gap"
+  );
+
+
+const nameSize =
+  document.getElementById(
+    "nameSize"
+  );
+
+
+const showSector =
+  document.getElementById(
+    "showSector"
+  );
+
+
+function updateLayout(){
+
+  root.style.setProperty(
+    "--qr-size",
+    qrSize.value + "mm"
+  );
+
+
+  root.style.setProperty(
+    "--columns",
+    columns.value
+  );
+
+
+  root.style.setProperty(
+    "--gap",
+    gap.value + "mm"
+  );
+
+
+  root.style.setProperty(
+    "--name-size",
+    nameSize.value + "pt"
+  );
+
+
+  document
+    .querySelectorAll(
+      ".qr-sector"
+    )
+    .forEach(
+      el =>
+        el.style.display =
+          showSector.checked
+            ? ""
+            : "none"
+    );
+
+}
+
+
+[
+  qrSize,
+  columns,
+  gap,
+  nameSize,
+  showSector
+]
+.forEach(
+  el =>
+    el.addEventListener(
+      "input",
+      updateLayout
+    )
+);
+
+
+document
+  .getElementById("print")
+  .onclick =
+    () => window.print();
+
+
+document
+  .getElementById("download")
+  .onclick = () => {
+
+    const html =
+      "<!doctype html>\\n" +
+      document.documentElement
+        .outerHTML;
+
+
+    const blob =
+      new Blob(
+        [html],
+        {
+          type:
+            "text/html;charset=utf-8"
+        }
+      );
+
+
+    const url =
+      URL.createObjectURL(
+        blob
+      );
+
+
+    const a =
+      document.createElement(
+        "a"
+      );
+
+
+    a.href = url;
+
+    a.download =
+      "QR-produtos-editavel.html";
+
+    a.click();
+
+
+    setTimeout(
+      () =>
+        URL.revokeObjectURL(
+          url
+        ),
+      1000
+    );
+
+  };
+
+
+updateLayout();
+
+</script>
+
+
+</body>
+
+</html>
+
+  `;
+
+}
+
+
+/* =========================
+   ABRIR EDITOR QR
+========================= */
+
+function openQREditor(){
+
+  const products =
+    window.__productsData || {};
+
+
+  if(
+    !Object.keys(products).length
+  ){
+
+    alert(
+      "Ainda não existem produtos com QR."
+    );
+
+    return;
+
+  }
+
+
+  const w =
+    window.open(
+      "",
+      "_blank"
+    );
+
+
+  if(!w){
+
+    alert(
+      "Permite janelas de impressão para esta página."
+    );
+
+    return;
+
+  }
+
+
+  w.document.open();
+
+  w.document.write(
+    createQREditorHTML()
+  );
+
+  w.document.close();
+
+}
+
+
+$("openQRList").onclick =
+  openQREditor;
+
+
+/* =========================
+   EXPORTAR QR
+========================= */
+
+$("exportQRList").onclick =
+  () => {
+
+    const products =
+      window.__productsData || {};
+
+
+    if(
+      !Object.keys(products).length
+    ){
+
+      alert(
+        "Ainda não existem produtos com QR."
+      );
+
+      return;
+
+    }
+
+
+    const html =
+      createQREditorHTML();
+
+
+    const blob =
+      new Blob(
+        [html],
+        {
+          type:
+            "text/html;charset=utf-8"
+        }
+      );
+
+
+    const url =
+      URL.createObjectURL(
+        blob
+      );
+
+
+    const a =
+      document.createElement(
+        "a"
+      );
+
+
+    a.href = url;
+
+    a.download =
+      "QR-produtos-editavel.html";
+
+    a.click();
+
+
+    setTimeout(
+      () =>
+        URL.revokeObjectURL(url),
+      1000
+    );
+
+  };
+
+
+/* =========================
+   PROCESSAR QR
+========================= */
 
 async function processQR(){
 
@@ -1555,9 +2533,10 @@ async function processQR(){
 
 
   if(
-    !hash.startsWith("#add=")
-    ||
-    !currentUser
+    !currentUser ||
+    !hash.startsWith(
+      "#add="
+    )
   ){
 
     return;
@@ -1570,12 +2549,6 @@ async function processQR(){
       hash.slice(5)
     );
 
-
-  /*
-    Remove imediatamente o hash
-    para não voltar a adicionar
-    o mesmo produto ao atualizar.
-  */
 
   history.replaceState(
     null,
@@ -1592,7 +2565,9 @@ async function processQR(){
 
     await addShopping(
       product.name,
-      getCategory(product)
+      id,
+      product.sector ||
+      "Outros"
     );
 
 
@@ -1603,7 +2578,7 @@ async function processQR(){
   }else{
 
     alert(
-      "Produto não encontrado.\n\n" +
+      "Produto não encontrado. " +
       "O QR pode pertencer a um produto que foi apagado."
     );
 
@@ -1612,78 +2587,9 @@ async function processQR(){
 }
 
 
-/* =========================================================
-   LIMPAR COMPRADOS
-========================================================= */
-
-$("clearBought").onclick =
-  async () => {
-
-    const items =
-      window.__shoppingData || {};
-
-
-    const tasks =
-      Object.entries(items)
-        .filter(
-          ([,item]) =>
-            item.bought
-        )
-        .map(
-          ([id]) =>
-            remove(
-              ref(
-                db,
-                `users/${currentUser.uid}/shopping/${id}`
-              )
-            )
-        );
-
-
-    await Promise.all(tasks);
-
-  };
-
-
-/* =========================================================
-   LIMPAR LISTA
-========================================================= */
-
-$("clearList").onclick =
-  async () => {
-
-    const ok =
-      confirm(
-        "Eliminar toda a lista de compras?"
-      );
-
-
-    if(!ok)
-      return;
-
-
-    await remove(
-      ref(
-        db,
-        `users/${currentUser.uid}/shopping`
-      )
-    );
-
-  };
-
-
-/* =========================================================
-   IMPRIMIR
-========================================================= */
-
-$("printBtn").onclick =
-  () =>
-    window.print();
-
-
-/* =========================================================
-   FIREBASE AUTH
-========================================================= */
+/* =========================
+   FIREBASE
+========================= */
 
 onAuthStateChanged(
   auth,
@@ -1699,7 +2605,6 @@ onAuthStateChanged(
         .classList
         .add("hidden");
 
-
       $("loginArea")
         .classList
         .remove("hidden");
@@ -1710,20 +2615,11 @@ onAuthStateChanged(
       );
 
 
-      if(stopList){
-
+      if(stopList)
         stopList();
-        stopList = null;
 
-      }
-
-
-      if(stopProducts){
-
+      if(stopProducts)
         stopProducts();
-        stopProducts = null;
-
-      }
 
 
       return;
@@ -1734,7 +2630,6 @@ onAuthStateChanged(
     $("loginArea")
       .classList
       .add("hidden");
-
 
     $("app")
       .classList
@@ -1753,18 +2648,13 @@ onAuthStateChanged(
     );
 
 
-    /* LISTA */
-
-    const listRef =
-      ref(
-        db,
-        `users/${user.uid}/shopping`
-      );
-
-
     stopList =
       onValue(
-        listRef,
+        ref(
+          db,
+          `users/${user.uid}/shopping`
+        ),
+
         snap => {
 
           window.__shoppingData =
@@ -1779,18 +2669,13 @@ onAuthStateChanged(
       );
 
 
-    /* PRODUTOS */
-
-    const productsRef =
-      ref(
-        db,
-        `users/${user.uid}/products`
-      );
-
-
     stopProducts =
       onValue(
-        productsRef,
+        ref(
+          db,
+          `users/${user.uid}/products`
+        ),
+
         snap => {
 
           window.__productsData =
@@ -1802,6 +2687,9 @@ onAuthStateChanged(
           );
 
 
+          showProductSuggestions();
+
+
           processQR();
 
         }
@@ -1810,10 +2698,6 @@ onAuthStateChanged(
   }
 );
 
-
-/* =========================================================
-   QR QUANDO O HASH MUDA
-========================================================= */
 
 window.addEventListener(
   "hashchange",
