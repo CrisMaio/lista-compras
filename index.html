@@ -338,28 +338,14 @@ dialog::backdrop{
         placeholder="Ex.: Leite"
       >
 
-      <select
-        id="productSector"
+      <select id="productSector"></select>
+
+      <button
+        id="newCategory"
+        type="button"
       >
-        <option value="🥫 Mercearia">🥫 Mercearia</option>
-        <option value="🥦 Frutas e Legumes">
-          🥦 Frutas e Legumes
-        </option>
-        <option value="🥩 Talho">🥩 Talho</option>
-        <option value="🐟 Peixaria">🐟 Peixaria</option>
-        <option value="🥛 Lacticínios e Ovos">🥛 Lacticínios e Ovos</option>
-        <option value="❄️ Congelados">❄️ Congelados</option>
-        <option value="🥤 Bebidas">🥤 Bebidas</option>
-        <option value="🥖 Padaria e Pastelaria">🥖 Padaria e Pastelaria</option>
-        <option value="🧴 Higiene e Estética">🧴 Higiene e Estética</option>
-        <option value="🧹 Limpeza da Casa">🧹 Limpeza da Casa</option>
-        <option value="🐕 Animais">🐕 Animais</option>
-        <option value="🍪 Snacks e Bolachas">🍪 Snacks e Bolachas</option>
-        <option value="🏠 Casa e Bazar">🏠 Casa e Bazar</option>
-        <option value="🧀 Charcutaria">🧀 Charcutaria</option>
-        <option value="💊 Saúde e Bem-estar">💊 Saúde e Bem-estar</option>
-        <option value="Outros">Outros</option>
-      </select>
+        ➕ Nova categoria
+      </button>
 
       <button
         id="createProduct"
@@ -454,6 +440,7 @@ let currentUser = null;
 let stopList = null;
 
 let stopProducts = null;
+let stopCategories = null;
 
 
 /* =========================
@@ -1116,6 +1103,110 @@ document.addEventListener(
 );
 
 
+
+/* =========================
+   CATEGORIAS
+========================= */
+
+const DEFAULT_CATEGORIES = [
+  "🥫 Mercearia",
+  "🥦 Frutas e Legumes",
+  "🥩 Talho",
+  "🐟 Peixaria",
+  "🥛 Lacticínios e Ovos",
+  "❄️ Congelados",
+  "🥤 Bebidas",
+  "🥖 Padaria e Pastelaria",
+  "🧴 Higiene e Estética",
+  "🧹 Limpeza da Casa",
+  "🐕 Animais",
+  "🍪 Snacks e Bolachas",
+  "🏠 Casa e Bazar",
+  "🧀 Charcutaria",
+  "💊 Saúde e Bem-estar",
+  "Outros"
+];
+
+function getCategories(){
+  const saved = window.__categoriesData || {};
+  const names = new Set();
+
+  Object.keys(saved).forEach(k => {
+    if(String(saved[k] || "").trim()) names.add(String(saved[k]).trim());
+  });
+
+  Object.values(window.__productsData || {}).forEach(p => {
+    const c = String(p?.sector || "").trim();
+    if(c) names.add(c);
+  });
+
+  if(!names.size) DEFAULT_CATEGORIES.forEach(c => names.add(c));
+
+  return Array.from(names).sort((a,b) => a.localeCompare(b,"pt",{sensitivity:"base"}));
+}
+
+function categoryId(name){
+  return safeId(name) || "categoria";
+}
+
+function renderCategoryOptions(selectId, selectedValue = "Outros"){
+  const select = $(selectId);
+  if(!select) return;
+
+  const categories = getCategories();
+  select.innerHTML = categories.map(c =>
+    `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`
+  ).join("");
+
+  if(categories.includes(selectedValue)){
+    select.value = selectedValue;
+  }else{
+    const option = document.createElement("option");
+    option.value = selectedValue;
+    option.textContent = selectedValue;
+    select.appendChild(option);
+    select.value = selectedValue;
+  }
+}
+
+async function saveCategory(name){
+  const clean = String(name || "").trim();
+  if(!clean || !currentUser) return null;
+
+  const existing = getCategories().find(c => normalizeSearch(c) === normalizeSearch(clean));
+  if(existing) return existing;
+
+  await set(
+    ref(db, `users/${currentUser.uid}/categories/${categoryId(clean)}`),
+    clean
+  );
+
+  return clean;
+}
+
+async function createCategoryFromUI(selectId){
+  const name = prompt("Nome da nova categoria:");
+  if(name === null) return null;
+
+  const clean = name.trim();
+  if(!clean) return null;
+
+  const saved = await saveCategory(clean);
+  renderCategoryOptions(selectId, saved || clean);
+  return saved || clean;
+}
+
+function categorySelectHTML(id, selected){
+  const categories = getCategories();
+  return `
+    <select id="${id}">
+      ${categories.map(c =>
+        `<option value="${escapeHtml(c)}" ${normalizeSearch(c)===normalizeSearch(selected||"Outros") ? "selected" : ""}>${escapeHtml(c)}</option>`
+      ).join("")}
+    </select>
+  `;
+}
+
 /* =========================
    PRODUTOS
 ========================= */
@@ -1344,6 +1435,12 @@ async function createProduct(){
   }
 
 
+  const sector =
+    $("productSector").value ||
+    "Outros";
+
+  await saveCategory(sector);
+
   await set(
     ref(
       db,
@@ -1351,8 +1448,7 @@ async function createProduct(){
     ),
     {
       name,
-      sector:
-        $("productSector").value
+      sector
     }
   );
 
@@ -1364,6 +1460,11 @@ async function createProduct(){
 
 $("createProduct").onclick =
   createProduct;
+
+$("newCategory").onclick =
+  () => createCategoryFromUI("productSector");
+
+renderCategoryOptions("productSector", "Outros");
 
 
 $("productName").onkeydown =
@@ -1380,49 +1481,84 @@ async function editProduct(
   product
 ){
 
-  const newName =
-    prompt(
-      "Nome do produto:",
-      product.name
-    );
+  const dialog = document.createElement("dialog");
 
-  if(newName === null)
-    return;
+  dialog.innerHTML = `
+    <form method="dialog" style="min-width:min(420px,90vw)">
+      <h3 style="margin-top:0">Editar produto / QR</h3>
 
+      <label style="display:block;margin-bottom:10px">
+        <strong>Designação</strong><br>
+        <input id="editProductName" value="${escapeHtml(product.name)}" style="width:100%;margin-top:5px">
+      </label>
 
-  const name =
-    newName.trim();
+      <label style="display:block;margin-bottom:6px">
+        <strong>Classificação / categoria</strong><br>
+        <select id="editProductSector" style="width:100%;margin-top:5px"></select>
+      </label>
 
-  if(!name)
-    return;
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+        <button id="editNewCategory" type="button">➕ Nova categoria</button>
+      </div>
 
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button id="cancelEdit" type="button">Cancelar</button>
+        <button id="saveEdit" class="primary" type="button">Guardar</button>
+      </div>
+    </form>
+  `;
 
-  const sector =
-    prompt(
-      "Sector do supermercado:\n\n" +
-      "Ex.: 🥫 Mercearia, Higiene, " +
-      "Congelados, Outros...",
-      product.sector ||
-      "Outros"
-    );
+  document.body.appendChild(dialog);
+  renderCategoryOptions("editProductSector", product.sector || "Outros");
+  dialog.showModal();
 
-  if(sector === null)
-    return;
+  dialog.querySelector("#editNewCategory").onclick = async () => {
+    const value = await createCategoryFromUI("editProductSector");
+    if(value) dialog.querySelector("#editProductSector").value = value;
+  };
 
+  dialog.querySelector("#cancelEdit").onclick = () => dialog.close();
 
-  await update(
-    ref(
-      db,
-      `users/${currentUser.uid}/products/${id}`
-    ),
-    {
-      name,
-      sector:
-        sector.trim() ||
-        "Outros"
+  dialog.querySelector("#saveEdit").onclick = async () => {
+    const name = dialog.querySelector("#editProductName").value.trim();
+    const sector = dialog.querySelector("#editProductSector").value.trim() || "Outros";
+
+    if(!name){
+      alert("Indica a designação do produto.");
+      return;
     }
-  );
 
+    await saveCategory(sector);
+
+    await update(
+      ref(
+        db,
+        `users/${currentUser.uid}/products/${id}`
+      ),
+      {
+        name,
+        sector
+      }
+    );
+
+    // Atualiza também os itens da lista que tenham o mesmo produto.
+    const shopping = window.__shoppingData || {};
+    for(const [shoppingId,item] of Object.entries(shopping)){
+      if(
+        shoppingId === id ||
+        normalizeSearch(item.name) === normalizeSearch(product.name)
+      ){
+        await update(
+          ref(db, `users/${currentUser.uid}/shopping/${shoppingId}`),
+          {name, sector}
+        );
+      }
+    }
+
+    dialog.close();
+  };
+
+  dialog.addEventListener("close", () => dialog.remove(), {once:true});
 }
 
 
@@ -2378,7 +2514,7 @@ body{
       type="number"
       min="0"
       max="15"
-      value="4"
+      value="1"
     >
 
     mm
@@ -2395,7 +2531,7 @@ body{
       type="number"
       min="0"
       max="10"
-      value="3"
+      value="1"
     >
 
     mm
@@ -3230,6 +3366,8 @@ onAuthStateChanged(
       if(stopProducts)
         stopProducts();
 
+      if(stopCategories)
+        stopCategories();
 
       return;
 
@@ -3278,6 +3416,42 @@ onAuthStateChanged(
       );
 
 
+    stopCategories =
+      onValue(
+        ref(
+          db,
+          `users/${user.uid}/categories`
+        ),
+
+        async snap => {
+          window.__categoriesData =
+            snap.val() || {};
+
+          // Mantém as categorias que já existem nos produtos e cria
+          // a lista inicial apenas quando ainda não há categorias guardadas.
+          if(!Object.keys(window.__categoriesData).length){
+            const existing = new Set(
+              Object.values(window.__productsData || {})
+                .map(p => String(p?.sector || "").trim())
+                .filter(Boolean)
+            );
+
+            const initial = existing.size
+              ? Array.from(existing)
+              : DEFAULT_CATEGORIES;
+
+            for(const category of initial){
+              await saveCategory(category);
+            }
+
+            return;
+          }
+
+          renderCategoryOptions("productSector", $("productSector")?.value || "Outros");
+        }
+      );
+
+
     stopProducts =
       onValue(
         ref(
@@ -3290,6 +3464,8 @@ onAuthStateChanged(
           window.__productsData =
             snap.val() || {};
 
+
+          renderCategoryOptions("productSector", $("productSector")?.value || "Outros");
 
           renderProducts(
             window.__productsData
