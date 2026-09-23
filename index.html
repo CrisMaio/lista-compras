@@ -2793,10 +2793,10 @@ function updateSelection(){
     ).length;
 
 
-  selectionCount.textContent =
+selectionCount.textContent =
     useSelected
-      ? `${selected} de ${total} selecionados`
-      : `${total} produtos`;
+      ? selected + " de " + total + " selecionados"
+      : total + " produtos";
 
 }
 
