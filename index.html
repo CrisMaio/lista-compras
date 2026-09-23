@@ -1140,7 +1140,9 @@ function getCategories(){
     if(c) names.add(c);
   });
 
-  if(!names.size) DEFAULT_CATEGORIES.forEach(c => names.add(c));
+  // As categorias base ficam sempre disponíveis, mesmo que já existam
+  // categorias personalizadas guardadas na Firebase.
+  DEFAULT_CATEGORIES.forEach(c => names.add(c));
 
   return Array.from(names).sort((a,b) => a.localeCompare(b,"pt",{sensitivity:"base"}));
 }
@@ -1448,7 +1450,8 @@ async function createProduct(){
     ),
     {
       name,
-      sector
+      sector,
+      createdAt: Date.now()
     }
   );
 
@@ -1913,16 +1916,23 @@ function createQREditorHTML(){
   const products =
     window.__productsData || {};
 
+  // Produtos mais recentes primeiro.
+  // Produtos antigos que ainda não têm createdAt ficam no fim.
   const entries =
     Object.entries(products)
-      .sort(
-        (a,b) =>
-          String(a[1].name)
-            .localeCompare(
-              String(b[1].name),
-              "pt"
-            )
-      );
+      .sort((a,b) => {
+        const da = Number(a[1]?.createdAt || 0);
+        const db = Number(b[1]?.createdAt || 0);
+
+        if(da !== db) return db - da;
+
+        return String(a[1]?.name || "")
+          .localeCompare(
+            String(b[1]?.name || ""),
+            "pt",
+            {sensitivity:"base"}
+          );
+      });
 
 
   const cards =
@@ -1994,6 +2004,7 @@ function createQREditorHTML(){
               ${escapeHtml(
                 p.sector || "Outros"
               )}
+              ${p.createdAt ? " · " + new Date(p.createdAt).toLocaleDateString("pt-PT") : ""}
             </small>
           </span>
 
@@ -2583,6 +2594,13 @@ body{
     ⬇️ Exportar HTML
   </button>
 
+
+  <button
+    id="downloadImage"
+  >
+    🖼️ Exportar imagem
+  </button>
+
 </div>
 
 
@@ -3049,6 +3067,106 @@ document
     };
 
 
+function exportLabelsAsImage(){
+
+  const useSelected =
+    selectedProducts.checked;
+
+  const selectedIds =
+    new Set(
+      checks
+        .filter(c => c.checked)
+        .map(c => c.value)
+    );
+
+  if(useSelected && !selectedIds.size){
+    alert("Seleciona pelo menos um produto para exportar.");
+    return;
+  }
+
+  const items =
+    entriesForExport.filter(([id]) =>
+      !useSelected || selectedIds.has(id)
+    );
+
+  if(!items.length){
+    alert("Não existem produtos para exportar.");
+    return;
+  }
+
+  const width = Number(paperWidth.value) || 50;
+  const qr = Number(qrSize.value) || 20;
+  const cols = Math.max(1, Number(columns.value) || 1);
+  const gapMm = Number(gap.value) || 0;
+  const marginMm = Number(sideMargin.value) || 0;
+  const namePt = Number(nameSize.value) || 10;
+  const sectorPt = 8;
+  const cellWidth = (width - marginMm * 2 - gapMm * (cols - 1)) / cols;
+  const cellHeight = qr + 4 + (showSector.checked ? 5 : 0);
+  const rows = Math.ceil(items.length / cols);
+  const height = marginMm * 2 + rows * cellHeight + Math.max(0, rows - 1) * gapMm;
+
+  const esc = value => String(value ?? "")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&apos;");
+
+  const textLines = (text, maxChars) => {
+    const words = String(text || "").split(/\s+/);
+    const lines = [];
+    let line = "";
+    for(const word of words){
+      const test = line ? line + " " + word : word;
+      if(test.length > maxChars && line){
+        lines.push(line);
+        line = word;
+      }else{
+        line = test;
+      }
+    }
+    if(line) lines.push(line);
+    return lines.length ? lines : [""];
+  };
+
+  const cells = items.map(([id,p], index) => {
+    const col = index % cols;
+    const row = Math.floor(index / cols);
+    const x = marginMm + col * (cellWidth + gapMm);
+    const y = marginMm + row * (cellHeight + gapMm);
+    const cx = x + cellWidth / 2;
+    const image = `https://quickchart.io/qr?size=700&text=${encodeURIComponent(qrUrl(id))}`;
+    const lines = textLines(p.name, Math.max(8, Math.floor(cellWidth / 2.2)));
+    let out = `<image href="${esc(image)}" x="${x + (cellWidth-qr)/2}" y="${y}" width="${qr}" height="${qr}" preserveAspectRatio="xMidYMid meet"/>`;
+    lines.slice(0,3).forEach((line,i) => {
+      out += `<text x="${cx}" y="${y + qr + 3.5 + i * (namePt/3)}" text-anchor="middle" font-family="Arial,sans-serif" font-size="${namePt}pt" font-weight="bold">${esc(line)}</text>`;
+    });
+    if(showSector.checked){
+      out += `<text x="${cx}" y="${y + qr + 3.5 + Math.min(lines.length,3) * (namePt/3) + 3}" text-anchor="middle" font-family="Arial,sans-serif" font-size="${sectorPt}pt" fill="#666">${esc(p.sector || "Outros")}</text>`;
+    }
+    return out;
+  }).join("\n");
+
+  const svg = `<?xml version="1.0" encoding="UTF-8"?>\n` +
+    `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${width}mm" height="${height}mm" viewBox="0 0 ${width} ${height}">` +
+    `<rect width="100%" height="100%" fill="white"/>${cells}</svg>`;
+
+  const blob = new Blob([svg], {type:"image/svg+xml;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "etiquetas-qr.svg";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+
+const entriesForExport = ${JSON.stringify(entries)};
+
+
 document
   .getElementById(
     "download"
@@ -3105,6 +3223,11 @@ document
     );
 
   };
+
+
+document
+  .getElementById("downloadImage")
+  .onclick = exportLabelsAsImage;
 
 
 const warning =
