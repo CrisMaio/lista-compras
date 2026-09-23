@@ -207,6 +207,34 @@ dialog::backdrop{
   A ligar à conta...
 </div>
 
+<script>
+window.addEventListener("error", function(e){
+  const el = document.getElementById("status");
+  if(el && el.textContent.trim() === "A ligar à conta..."){
+    el.textContent = "Erro ao carregar a aplicação. Recarrega a página.";
+  }
+  console.error(e.error || e.message);
+});
+window.addEventListener("unhandledrejection", function(e){
+  const el = document.getElementById("status");
+  if(el && el.textContent.trim() === "A ligar à conta..."){
+    el.textContent = "Erro ao ligar à Firebase. Recarrega a página.";
+  }
+  console.error(e.reason);
+});
+</script>
+
+<script>
+setTimeout(function(){
+  const status = document.getElementById("status");
+  const login = document.getElementById("loginArea");
+  if(status && status.textContent.trim() === "A ligar à conta..." && login){
+    login.classList.remove("hidden");
+    status.textContent = "É necessário iniciar sessão.";
+  }
+}, 5000);
+</script>
+
 <div id="loginArea" class="card hidden">
   <p>
     Entra com a tua conta Google para usar a mesma lista
