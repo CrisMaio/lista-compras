@@ -341,19 +341,21 @@ dialog::backdrop{
       <select
         id="productSector"
       >
-        <option value="Mercearia">Mercearia</option>
-        <option value="Frutas e legumes">
-          Frutas e legumes
+        <option value="🥫 Mercearia">🥫 Mercearia</option>
+        <option value="🥦 Frutas e Legumes">
+          🥦 Frutas e Legumes
         </option>
-        <option value="Talho">Talho</option>
-        <option value="Peixaria">Peixaria</option>
-        <option value="Laticínios">Laticínios</option>
-        <option value="Congelados">Congelados</option>
-        <option value="Bebidas">Bebidas</option>
-        <option value="Padaria">Padaria</option>
-        <option value="Higiene">Higiene</option>
-        <option value="Limpeza">Limpeza</option>
-        <option value="Animais">Animais</option>
+        <option value="🥩 Talho">🥩 Talho</option>
+        <option value="🐟 Peixaria">🐟 Peixaria</option>
+        <option value="🥛 Lacticínios e Ovos">🥛 Lacticínios e Ovos</option>
+        <option value="❄️ Congelados">❄️ Congelados</option>
+        <option value="🥤 Bebidas">🥤 Bebidas</option>
+        <option value="🥖 Padaria e Pastelaria">🥖 Padaria e Pastelaria</option>
+        <option value="🧴 Higiene e Estética">🧴 Higiene e Estética</option>
+        <option value="🧹 Limpeza da Casa">🧹 Limpeza da Casa</option>
+        <option value="🐕 Animais">🐕 Animais</option>
+        <option value="🍪 Snacks e Bolachas">🍪 Snacks e Bolachas</option>
+        <option value="🏠 Casa e Bazar">🏠 Casa e Bazar</option>
         <option value="Outros">Outros</option>
       </select>
 
@@ -1396,7 +1398,7 @@ async function editProduct(
   const sector =
     prompt(
       "Sector do supermercado:\n\n" +
-      "Ex.: Mercearia, Higiene, " +
+      "Ex.: 🥫 Mercearia, Higiene, " +
       "Congelados, Outros...",
       product.sector ||
       "Outros"
