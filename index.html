@@ -1773,7 +1773,6 @@ function createQREditorHTML(){
   const products =
     window.__productsData || {};
 
-
   const entries =
     Object.entries(products)
       .sort(
@@ -1833,6 +1832,38 @@ function createQREditorHTML(){
     .join("");
 
 
+  const productSelector =
+    entries.map(
+      ([id,p]) => `
+
+        <label
+          class="product-option"
+          data-product-id="${escapeHtml(id)}"
+        >
+
+          <input
+            type="checkbox"
+            class="product-check"
+            value="${escapeHtml(id)}"
+            checked
+          >
+
+          <span>
+            ${escapeHtml(p.name)}
+            <small>
+              ${escapeHtml(
+                p.sector || "Outros"
+              )}
+            </small>
+          </span>
+
+        </label>
+
+      `
+    )
+    .join("");
+
+
   return `
 
 <!doctype html>
@@ -1857,15 +1888,19 @@ function createQREditorHTML(){
 
 :root{
 
-  --qr-size:40mm;
+  --paper-width:50mm;
 
-  --columns:3;
+  --qr-size:20mm;
 
-  --gap:6mm;
+  --columns:2;
 
-  --name-size:12pt;
+  --gap:4mm;
 
-  --sector-size:9pt;
+  --side-margin:3mm;
+
+  --name-size:10pt;
+
+  --sector-size:8pt;
 
 }
 
@@ -1969,18 +2004,111 @@ body{
 
   background:#fff;
 
+  border-bottom:1px solid #ddd;
+
+}
+
+
+.selection-panel{
+
+  background:#fff;
+
+  border-bottom:1px solid #ccc;
+
+  padding:10px 12px;
+
+}
+
+
+.selection-title{
+
+  font-weight:bold;
+
+  margin-bottom:8px;
+
+}
+
+
+.selection-controls{
+
+  display:flex;
+
+  gap:8px;
+
+  flex-wrap:wrap;
+
+  align-items:center;
+
+  margin-bottom:8px;
+
+}
+
+
+.selection-list{
+
+  display:grid;
+
+  grid-template-columns:
+    repeat(
+      auto-fill,
+      minmax(190px,1fr)
+    );
+
+  gap:5px 12px;
+
+  max-height:220px;
+
+  overflow:auto;
+
+}
+
+
+.product-option{
+
+  display:flex;
+
+  align-items:flex-start;
+
+  gap:7px;
+
+  padding:5px;
+
+  border-radius:6px;
+
+  cursor:pointer;
+
+}
+
+
+.product-option:hover{
+
+  background:#f2f2f2;
+
+}
+
+
+.product-option small{
+
+  display:block;
+
+  color:#777;
+
+  font-size:11px;
+
+  margin-top:2px;
+
 }
 
 
 .sheet{
 
-  width:210mm;
-
-  min-height:297mm;
+  width:var(--paper-width);
 
   margin:10mm auto;
 
-  padding:10mm;
+  padding-left:var(--side-margin);
+
+  padding-right:var(--side-margin);
 
   background:white;
 
@@ -2012,6 +2140,8 @@ body{
 
   page-break-inside:avoid;
 
+  min-width:0;
+
 }
 
 
@@ -2025,7 +2155,7 @@ body{
 
   display:block;
 
-  margin:0 auto 2mm;
+  margin:0 auto 1.5mm;
 
 }
 
@@ -2038,9 +2168,9 @@ body{
 
   line-height:1.15;
 
-  min-height:5mm;
+  min-height:4mm;
 
-  padding:1mm;
+  padding:0.5mm;
 
   outline:none;
 
@@ -2062,7 +2192,18 @@ body{
 
   color:#666;
 
-  margin-top:1mm;
+  margin-top:0.5mm;
+
+}
+
+
+.warning{
+
+  color:#a00;
+
+  font-weight:bold;
+
+  display:none;
 
 }
 
@@ -2071,14 +2212,21 @@ body{
 
   @page{
 
-    size:A4;
+    size:50mm auto;
 
     margin:0;
 
   }
 
 
+  html,
   body{
+
+    width:50mm;
+
+    margin:0;
+
+    padding:0;
 
     background:white;
 
@@ -2086,7 +2234,8 @@ body{
 
 
   .toolbar,
-  .help{
+  .help,
+  .selection-panel{
 
     display:none!important;
 
@@ -2095,13 +2244,33 @@ body{
 
   .sheet{
 
-    width:210mm;
-
-    min-height:297mm;
+    width:50mm;
 
     margin:0;
 
-    padding:10mm;
+    padding-left:var(--side-margin);
+
+    padding-right:var(--side-margin);
+
+    background:white;
+
+  }
+
+
+  .grid{
+
+    width:100%;
+
+  }
+
+
+  .qr-card{
+
+    border:0!important;
+
+    background:white!important;
+
+    padding:0!important;
 
   }
 
@@ -2110,11 +2279,20 @@ body{
 
 @media screen{
 
+  .sheet{
+
+    min-height:20mm;
+
+    box-shadow:0 1px 8px #0002;
+
+  }
+
+
   .qr-card{
 
     background:#fff;
 
-    padding:3mm;
+    padding:2mm;
 
     border:1px solid #ddd;
 
@@ -2135,64 +2313,119 @@ body{
 <div class="toolbar">
 
   <label>
+
+    Papel:
+
+    <input
+      id="paperWidth"
+      type="number"
+      min="30"
+      max="100"
+      value="50"
+    >
+
+    mm
+
+  </label>
+
+
+  <label>
+
     QR:
+
     <input
       id="qrSize"
       type="number"
       min="10"
-      max="100"
-      value="40"
+      max="45"
+      value="20"
     >
+
     mm
+
   </label>
 
 
   <label>
+
     Colunas:
+
     <select id="columns">
+
       <option value="1">1</option>
-      <option value="2">2</option>
-      <option value="3" selected>3</option>
+
+      <option value="2" selected>2</option>
+
+      <option value="3">3</option>
+
       <option value="4">4</option>
-      <option value="5">5</option>
-      <option value="6">6</option>
+
     </select>
+
   </label>
 
 
   <label>
+
     Espaço:
+
     <input
       id="gap"
       type="number"
       min="0"
-      max="30"
-      value="6"
+      max="15"
+      value="4"
     >
+
     mm
+
   </label>
 
 
   <label>
+
+    Margem:
+
+    <input
+      id="sideMargin"
+      type="number"
+      min="0"
+      max="10"
+      value="3"
+    >
+
+    mm
+
+  </label>
+
+
+  <label>
+
     Nome:
+
     <input
       id="nameSize"
       type="number"
       min="6"
-      max="30"
-      value="12"
+      max="20"
+      value="10"
     >
+
     pt
+
   </label>
 
 
   <label>
+
     <input
       id="showSector"
       type="checkbox"
       checked
     >
+
     Mostrar sector
+
   </label>
 
 
@@ -2213,13 +2446,92 @@ body{
 </div>
 
 
+<div class="selection-panel">
+
+  <div class="selection-title">
+    Produtos a imprimir
+  </div>
+
+
+  <div class="selection-controls">
+
+    <label>
+
+      <input
+        type="radio"
+        name="selectionMode"
+        id="allProducts"
+        value="all"
+        checked
+      >
+
+      Todos
+
+    </label>
+
+
+    <label>
+
+      <input
+        type="radio"
+        name="selectionMode"
+        id="selectedProducts"
+        value="selected"
+      >
+
+      Selecionar produtos
+
+    </label>
+
+
+    <button
+      id="selectAll"
+      type="button"
+    >
+      Selecionar todos
+    </button>
+
+
+    <button
+      id="selectNone"
+      type="button"
+    >
+      Limpar seleção
+    </button>
+
+
+    <span
+      id="selectionCount"
+      class="muted"
+    ></span>
+
+  </div>
+
+
+  <div
+    id="productSelection"
+    class="selection-list hidden"
+  >
+
+    ${productSelector}
+
+  </div>
+
+</div>
+
+
 <div class="help">
 
-  <strong>Como usar:</strong>
-  altera o tamanho, número de colunas e espaçamento.
-  Os nomes por baixo dos QR também podem ser editados
-  diretamente nesta página.
-  Depois carrega em <strong>Imprimir</strong>.
+  <strong>Papel contínuo:</strong>
+  50 mm por defeito, QR de 20 mm e 2 colunas.
+  A altura aumenta automaticamente conforme o número
+  de produtos.
+
+  <br><br>
+
+  Os nomes por baixo dos QR podem ser alterados
+  diretamente nesta página sem alterar os produtos
+  nem os identificadores dos QR.
 
 </div>
 
@@ -2241,6 +2553,12 @@ const root =
   document.documentElement;
 
 
+const paperWidth =
+  document.getElementById(
+    "paperWidth"
+  );
+
+
 const qrSize =
   document.getElementById(
     "qrSize"
@@ -2259,6 +2577,12 @@ const gap =
   );
 
 
+const sideMargin =
+  document.getElementById(
+    "sideMargin"
+  );
+
+
 const nameSize =
   document.getElementById(
     "nameSize"
@@ -2271,7 +2595,53 @@ const showSector =
   );
 
 
+const allProducts =
+  document.getElementById(
+    "allProducts"
+  );
+
+
+const selectedProducts =
+  document.getElementById(
+    "selectedProducts"
+  );
+
+
+const productSelection =
+  document.getElementById(
+    "productSelection"
+  );
+
+
+const selectionCount =
+  document.getElementById(
+    "selectionCount"
+  );
+
+
+const cards =
+  Array.from(
+    document.querySelectorAll(
+      ".qr-card"
+    )
+  );
+
+
+const checks =
+  Array.from(
+    document.querySelectorAll(
+      ".product-check"
+    )
+  );
+
+
 function updateLayout(){
+
+  root.style.setProperty(
+    "--paper-width",
+    paperWidth.value + "mm"
+  );
+
 
   root.style.setProperty(
     "--qr-size",
@@ -2288,6 +2658,12 @@ function updateLayout(){
   root.style.setProperty(
     "--gap",
     gap.value + "mm"
+  );
+
+
+  root.style.setProperty(
+    "--side-margin",
+    sideMargin.value + "mm"
   );
 
 
@@ -2309,13 +2685,137 @@ function updateLayout(){
             : "none"
     );
 
+
+  validateWidth();
+
+}
+
+
+function validateWidth(){
+
+  const width =
+    Number(paperWidth.value) || 50;
+
+  const margin =
+    Number(sideMargin.value) || 0;
+
+  const qr =
+    Number(qrSize.value) || 20;
+
+  const cols =
+    Number(columns.value) || 1;
+
+  const spacing =
+    Number(gap.value) || 0;
+
+
+  const available =
+    width -
+    (margin * 2);
+
+
+  const required =
+    (qr * cols) +
+    (spacing * (cols - 1));
+
+
+  const warning =
+    document.getElementById(
+      "widthWarning"
+    );
+
+
+  if(
+    warning
+  ){
+
+    warning.style.display =
+      required > available
+        ? "inline"
+        : "none";
+
+    warning.textContent =
+      required > available
+        ? "⚠️ O tamanho escolhido não cabe no papel."
+        : "";
+
+  }
+
+}
+
+
+function updateSelection(){
+
+  const useSelected =
+    selectedProducts.checked;
+
+
+  productSelection.classList.toggle(
+    "hidden",
+    !useSelected
+  );
+
+
+  cards.forEach(
+    card => {
+
+      const id =
+        card.dataset.id;
+
+      const check =
+        checks.find(
+          c =>
+            c.value === id
+        );
+
+
+      const visible =
+        !useSelected ||
+        !!check?.checked;
+
+
+      card.style.display =
+        visible
+          ? ""
+          : "none";
+
+    }
+  );
+
+
+  const total =
+    checks.length;
+
+
+  const selected =
+    checks.filter(
+      c => c.checked
+    ).length;
+
+
+  selectionCount.textContent =
+    useSelected
+      ? `${selected} de ${total} selecionados`
+      : `${total} produtos`;
+
+}
+
+
+function refreshSelection(){
+
+  updateSelection();
+
+  updateLayout();
+
 }
 
 
 [
+  paperWidth,
   qrSize,
   columns,
   gap,
+  sideMargin,
   nameSize,
   showSector
 ]
@@ -2328,14 +2828,91 @@ function updateLayout(){
 );
 
 
+allProducts.onchange =
+  refreshSelection;
+
+
+selectedProducts.onchange =
+  refreshSelection;
+
+
+checks.forEach(
+  check =>
+    check.addEventListener(
+      "change",
+      updateSelection
+    )
+);
+
+
 document
-  .getElementById("print")
+  .getElementById(
+    "selectAll"
+  )
+  .onclick = () => {
+
+    checks.forEach(
+      check =>
+        check.checked = true
+    );
+
+    selectedProducts.checked = true;
+
+    updateSelection();
+
+  };
+
+
+document
+  .getElementById(
+    "selectNone"
+  )
+  .onclick = () => {
+
+    checks.forEach(
+      check =>
+        check.checked = false
+    );
+
+    selectedProducts.checked = true;
+
+    updateSelection();
+
+  };
+
+
+document
+  .getElementById(
+    "print"
+  )
   .onclick =
-    () => window.print();
+    () => {
+
+      if(
+        selectedProducts.checked &&
+        !checks.some(
+          c => c.checked
+        )
+      ){
+
+        alert(
+          "Seleciona pelo menos um produto para imprimir."
+        );
+
+        return;
+
+      }
+
+
+      window.print();
+
+    };
 
 
 document
-  .getElementById("download")
+  .getElementById(
+    "download"
+  )
   .onclick = () => {
 
     const html =
@@ -2371,7 +2948,12 @@ document
     a.download =
       "QR-produtos-editavel.html";
 
+
+    document.body.appendChild(a);
+
     a.click();
+
+    a.remove();
 
 
     setTimeout(
@@ -2385,7 +2967,30 @@ document
   };
 
 
+const warning =
+  document.createElement(
+    "span"
+  );
+
+
+warning.id =
+  "widthWarning";
+
+warning.className =
+  "warning";
+
+
+paperWidth
+  .parentElement
+  .appendChild(
+    warning
+  );
+
+
+updateSelection();
+
 updateLayout();
+
 
 <\/script>
 
