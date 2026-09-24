@@ -1975,8 +1975,14 @@ function createQREditorHTML(){
 
 
   const productSelector =
-    entries.map(
-      ([id,p]) => `
+    groups.map(group => {
+      const heading = `
+        <div class="selection-date-heading">
+          ${escapeHtml(group.dateKey)}
+        </div>`;
+
+      const items = group.entries.map(
+        ([id,p]) => `
 
         <label
           class="product-option"
@@ -2002,8 +2008,10 @@ function createQREditorHTML(){
         </label>
 
       `
-    )
-    .join("");
+      ).join("");
+
+      return heading + items;
+    }).join("");
 
 
   return `
@@ -2225,6 +2233,25 @@ body{
 .product-option:hover{
 
   background:#f2f2f2;
+
+}
+
+
+.selection-date-heading{
+
+  grid-column:1 / -1;
+
+  font-weight:bold;
+
+  font-size:13px;
+
+  padding:8px 5px 5px;
+
+  margin-top:4px;
+
+  border-bottom:1px solid #bbb;
+
+  background:#f7f7f7;
 
 }
 
