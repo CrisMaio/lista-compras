@@ -1325,22 +1325,11 @@ $("productSearch").oninput =
 
 
 const DEFAULT_CATEGORIES = [
-  "🥫 Mercearia",
-  "🥦 Frutas e Legumes",
-  "🥩 Talho",
-  "🐟 Peixaria",
-  "🥛 Lacticínios e Ovos",
-  "❄️ Congelados",
-  "🥤 Bebidas",
-  "🥖 Padaria e Pastelaria",
-  "🧴 Higiene e Estética",
-  "🧹 Limpeza da Casa",
-  "🐕 Animais",
-  "🍪 Snacks e Bolachas",
-  "🏠 Casa e Bazar",
-  "🧀 Charcutaria",
-  "💊 Saúde e Bem-estar",
-  "Outros"
+  "🥫 Mercearia", "🥦 Frutas e Legumes", "🥩 Talho", "🐟 Peixaria",
+  "🥛 Lacticínios e Ovos", "❄️ Congelados", "🥤 Bebidas",
+  "🥖 Padaria e Pastelaria", "🧴 Higiene e Estética", "🧹 Limpeza da Casa",
+  "🐕 Animais", "🍪 Snacks e Bolachas", "🏠 Casa e Bazar", "🧀 Charcutaria",
+  "💊 Saúde e Bem-estar", "Outros"
 ];
 
 function getCategories(){
@@ -1353,45 +1342,33 @@ function getCategories(){
     const n = String(p?.sector || "").trim();
     if(n) names.add(n);
   });
-  return Array.from(names).sort((a,b) =>
-    a.localeCompare(b,"pt",{sensitivity:"base"})
-  );
+  return [...names].sort((a,b)=>a.localeCompare(b,"pt",{sensitivity:"base"}));
 }
 
-function renderCategoryOptions(selected){
-  const select = $("productSector");
+function renderCategoryOptions(selected="Outros"){
+  const select=$("productSector");
   if(!select) return;
-  const current = selected ?? select.value ?? "Outros";
-  select.innerHTML = getCategories()
-    .map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`)
-    .join("");
-  select.value = getCategories().includes(current) ? current : "Outros";
+  const cats=getCategories();
+  select.innerHTML=cats.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
+  select.value=cats.includes(selected) ? selected : "Outros";
 }
 
 async function saveCategory(name){
-  name = String(name || "").trim();
-  if(!name) return null;
-  const id = safeId(name);
-  await set(ref(db, `users/${currentUser.uid}/categories/${id}`), name);
-  return name;
+  const clean=String(name||"").trim();
+  if(!clean || !currentUser) return null;
+  const id=safeId(clean);
+  await set(ref(db,`users/${currentUser.uid}/categories/${id}`),clean);
+  return clean;
 }
 
 async function createCategory(){
-  const name = prompt("Nome da nova categoria:");
-  if(name === null) return;
-  const clean = name.trim();
-  if(!clean) return;
-  const saved = await saveCategory(clean);
-  renderCategoryOptions(saved);
+  const name=prompt("Nome da nova categoria:");
+  if(name===null) return;
+  const saved=await saveCategory(name);
+  if(saved) renderCategoryOptions(saved);
 }
 
-if($("productSector")){
-  renderCategoryOptions("Outros");
-}
-
-// Botão de nova categoria, caso exista no HTML.
-if($("newCategory")) $("newCategory").onclick = createCategory;
-
+$("newCategory").onclick=createCategory;
 
 async function createProduct(){
 
@@ -1467,55 +1444,37 @@ async function editProduct(
   if(newName === null)
     return;
 
+
   const name =
     newName.trim();
 
   if(!name)
     return;
 
-  let categories = getCategories();
 
-  let menu =
+  const categories=getCategories();
+  const menu =
     "Classificar o produto:\n\n" +
-    categories
-      .map((c,i) => `${i + 1}. ${c}`)
-      .join("\n") +
+    categories.map((c,i)=>`${i+1}. ${c}`).join("\n") +
     "\n\n0. ➕ Criar nova categoria";
 
-  let choice = prompt(
+  const choice=prompt(
     menu,
-    String(
-      Math.max(
-        1,
-        categories.indexOf(product.sector || "Outros") + 1
-      )
-    )
+    String(Math.max(1,categories.indexOf(product.sector || "Outros")+1))
   );
+  if(choice===null) return;
 
-  if(choice === null)
-    return;
-
-  let sector = "Outros";
-  const number = Number(choice);
-
-  if(number === 0){
-    const created = prompt("Nome da nova categoria:");
-    if(created === null)
-      return;
-    const clean = created.trim();
-    if(!clean)
-      return;
-    sector = await saveCategory(clean) || "Outros";
-  }else if(
-    Number.isInteger(number) &&
-    number >= 1 &&
-    number <= categories.length
-  ){
-    sector = categories[number - 1];
+  let sector="Outros";
+  const n=Number(choice);
+  if(n===0){
+    sector=await saveCategory(prompt("Nome da nova categoria:")) || "Outros";
+  }else if(Number.isInteger(n) && n>=1 && n<=categories.length){
+    sector=categories[n-1];
   }else{
     alert("Escolhe o número de uma categoria válida.");
     return;
   }
+
 
   await update(
     ref(
@@ -1529,7 +1488,6 @@ async function editProduct(
   );
 
 }
-
 
 
 /* =========================
@@ -1885,16 +1843,11 @@ function createQREditorHTML(){
 
   const entries =
     Object.entries(products)
-      .sort((a,b) => {
-        const da = Number(a[1]?.createdAt || 0);
-        const db = Number(b[1]?.createdAt || 0);
-        if(db !== da) return db - da;
-        return String(a[1]?.name || "")
-          .localeCompare(
-            String(b[1]?.name || ""),
-            "pt",
-            {sensitivity:"base"}
-          );
+      .sort((a,b)=>{
+        const da=Number(a[1]?.createdAt || 0);
+        const db=Number(b[1]?.createdAt || 0);
+        if(db!==da) return db-da;
+        return String(a[1]?.name || "").localeCompare(String(b[1]?.name || ""),"pt",{sensitivity:"base"});
       });
 
 
@@ -2556,12 +2509,6 @@ body{
     ⬇️ Exportar HTML
   </button>
 
-  <button
-    id="downloadImage"
-  >
-    🖼️ Exportar imagem
-  </button>
-
 </div>
 
 
@@ -3086,51 +3033,6 @@ document
   };
 
 
-document
-  .getElementById("downloadImage")
-  .onclick = () => {
-    const visible = cards.filter(c => c.style.display !== "none");
-    if(!visible.length){
-      alert("Não há etiquetas selecionadas para exportar.");
-      return;
-    }
-    const widthMm = Number(paperWidth.value) || 50;
-    const qrMm = Number(qrSize.value) || 20;
-    const gapMm = Number(gap.value) || 1;
-    const marginMm = Number(sideMargin.value) || 1;
-    const cols = Number(columns.value) || 1;
-    const cellW = (widthMm - marginMm*2 - gapMm*(cols-1)) / cols;
-    const cellH = qrMm + 12;
-    const rows = Math.ceil(visible.length / cols);
-    const px = n => n * 3.7795275591;
-    const W = px(widthMm), H = px(rows*cellH + marginMm*2);
-    let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`;
-    visible.forEach((card,i) => {
-      const id = card.dataset.id;
-      const name = card.querySelector(".qr-name")?.textContent.trim() || "";
-      const sector = card.querySelector(".qr-sector")?.textContent.trim() || "";
-      const col = i % cols, row = Math.floor(i / cols);
-      const x = px(marginMm + col*(cellW+gapMm));
-      const y = px(marginMm + row*cellH);
-      const size = px(Math.min(qrMm, cellW));
-      const url = qrImageUrl(id,700);
-      svg += `<rect x="${x}" y="${y}" width="${px(cellW)}" height="${px(cellH)}" fill="white"/>`;
-      svg += `<image href="${url}" x="${x+(px(cellW)-size)/2}" y="${y}" width="${size}" height="${size}"/>`;
-      svg += `<text x="${x+px(cellW/2)}" y="${y+size+px(5)}" text-anchor="middle" font-family="Arial" font-size="${Number(nameSize.value)||10}" fill="black">${escapeXmlForSvg(name)}</text>`;
-      if(showSector.checked) svg += `<text x="${x+px(cellW/2)}" y="${y+size+px(9)}" text-anchor="middle" font-family="Arial" font-size="8" fill="#555">${escapeXmlForSvg(sector)}</text>`;
-    });
-    svg += `</svg>`;
-    const blob = new Blob([svg],{type:"image/svg+xml;charset=utf-8"});
-    const url = URL.createObjectURL(blob);
-    const a=document.createElement("a"); a.href=url; a.download="etiquetas-QR.svg"; a.click();
-    setTimeout(()=>URL.revokeObjectURL(url),1000);
-  };
-
-function escapeXmlForSvg(value){
-  return String(value||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&apos;"}[c]));
-}
-
-
 const warning =
   document.createElement(
     "span"
@@ -3390,6 +3292,8 @@ onAuthStateChanged(
       if(stopProducts)
         stopProducts();
 
+      if(stopCategories)
+        stopCategories();
 
       return;
 
@@ -3472,7 +3376,7 @@ onAuthStateChanged(
         ),
         snap => {
           window.__categoriesData = snap.val() || {};
-          renderCategoryOptions($("productSector")?.value || "Outros");
+          renderCategoryOptions($("productSector").value || "Outros");
         }
       );
 
