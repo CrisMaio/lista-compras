@@ -1964,7 +1964,7 @@ function createQREditorHTML(){
       const image=`https://quickchart.io/qr?size=700&text=${encodeURIComponent(url)}`;
       return `
           <div class="qr-card" data-id="${escapeHtml(id)}">
-            <img class="qr-image" src="${image}" alt="">
+            <img class="qr-image" crossorigin="anonymous" src="${image}" alt="">
             <div class="qr-name" contenteditable="true" spellcheck="false">${escapeHtml(p.name)}</div>
             <div class="qr-sector">${escapeHtml(p.sector || "❗Outros")}</div>
           </div>`;
@@ -2471,6 +2471,8 @@ body{
 }
 
 </style>
+
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"><\/script>
 
 </head>
 
@@ -3160,8 +3162,7 @@ function escapeXml(value){
 
 function exportQRImage(){
 
-  const sheet =
-    document.querySelector(".sheet");
+  const sheet = document.querySelector(".sheet");
 
   if(!sheet){
     alert("Não foi possível encontrar a pré-visualização dos QRs.");
@@ -3177,207 +3178,138 @@ function exportQRImage(){
     return;
   }
 
-  const button =
-    document.getElementById("exportImage");
+  updateLayout();
 
-  const originalText =
-    button ? button.textContent : "";
+  if(typeof html2canvas !== "function"){
+    alert("Não foi possível carregar o motor de exportação da imagem. Verifica a ligação à internet e tenta novamente.");
+    return;
+  }
 
-  const loadHtml2Canvas = () => {
+  const images = Array.from(
+    sheet.querySelectorAll("img")
+  );
 
-    if(window.html2canvas)
-      return Promise.resolve(window.html2canvas);
-
-    return new Promise((resolve,reject)=>{
-
-      const existing =
-        document.querySelector(
-          'script[data-html2canvas="qr-export"]'
-        );
-
-      if(existing){
-        existing.addEventListener(
-          "load",
-          () => resolve(window.html2canvas),
-          {once:true}
-        );
-        existing.addEventListener(
-          "error",
-          () => reject(new Error("Não foi possível carregar o motor de exportação de imagem.")),
-          {once:true}
-        );
+  const waitForImages = images.map(
+    img => new Promise(resolve => {
+      if(img.complete){
+        if(typeof img.decode === "function"){
+          img.decode().catch(() => {}).finally(resolve);
+        }else{
+          resolve();
+        }
         return;
       }
 
-      const script =
-        document.createElement("script");
+      const done = () => resolve();
+      img.addEventListener("load", done, {once:true});
+      img.addEventListener("error", done, {once:true});
+    })
+  );
 
-      script.src =
-        "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js";
+  Promise.all([
+    ...waitForImages,
+    document.fonts?.ready || Promise.resolve()
+  ]).then(async function(){
 
-      script.async = true;
-      script.dataset.html2canvas = "qr-export";
+    const rect = sheet.getBoundingClientRect();
 
-      script.onload = () => {
-        if(window.html2canvas)
-          resolve(window.html2canvas);
-        else
-          reject(new Error("O motor de exportação não ficou disponível."));
-      };
+    if(!rect.width || !rect.height){
+      alert("Não foi possível determinar as dimensões da pré-visualização.");
+      return;
+    }
 
-      script.onerror = () =>
-        reject(new Error("Não foi possível carregar o motor de exportação de imagem."));
+    const paperMm = Math.max(
+      1,
+      Number(paperWidth.value) || 50
+    );
 
-      document.head.appendChild(script);
+    /*
+      Exportação raster a 600 DPI.
+      A largura física continua a ser exatamente a definida
+      para o papel, mas a imagem ganha resolução suficiente
+      para os QR e para os textos não ficarem desfocados.
+    */
+    const targetWidthPx = Math.round(
+      paperMm / 25.4 * 600
+    );
 
-    });
+    let scale =
+      targetWidthPx / rect.width;
 
-  };
-
-  const run = async () => {
+    /*
+      Mantém a imagem dentro de um tamanho de canvas seguro.
+      Para listas muito compridas, reduz apenas a escala
+      quando necessário, preservando sempre a composição.
+    */
+    const maxCanvasDimension = 30000;
+    scale = Math.min(
+      scale,
+      maxCanvasDimension / rect.width,
+      maxCanvasDimension / rect.height
+    );
 
     try{
 
-      updateLayout();
-
-      if(document.fonts && document.fonts.ready)
-        await document.fonts.ready;
-
-      if(button){
-        button.disabled = true;
-        button.textContent = "A preparar imagem...";
-      }
-
-      const html2canvas =
-        await loadHtml2Canvas();
-
-      const rect =
-        sheet.getBoundingClientRect();
-
-      const scale = 3;
-
-      const canvas =
-        await html2canvas(
-          sheet,
-          {
-            backgroundColor: "#fff",
-            scale: scale,
-            useCORS: true,
-            allowTaint: false,
-            logging: false,
-            imageTimeout: 20000,
-            width: Math.ceil(rect.width),
-            height: Math.ceil(rect.height),
-            scrollX: 0,
-            scrollY: 0,
-            windowWidth: document.documentElement.clientWidth,
-            windowHeight: document.documentElement.clientHeight
-          }
-        );
-
-      const paperMm =
-        Math.max(
-          1,
-          Number(paperWidth.value) || 50
-        );
-
-      const widthPx =
-        Math.max(1, canvas.width);
-
-      const heightPx =
-        Math.max(1, canvas.height);
-
-      const scale300 =
-        (paperMm / 25.4 * 300) /
-        widthPx;
-
-      const outputWidth =
-        Math.max(
-          1,
-          Math.round(widthPx * Math.max(scale300, 1))
-        );
-
-      const outputHeight =
-        Math.max(
-          1,
-          Math.round(heightPx * Math.max(scale300, 1))
-        );
-
-      const output =
-        document.createElement("canvas");
-
-      output.width = outputWidth;
-      output.height = outputHeight;
-
-      const ctx =
-        output.getContext("2d");
-
-      ctx.fillStyle = "#fff";
-      ctx.fillRect(0,0,output.width,output.height);
-
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = "high";
-
-      ctx.drawImage(
-        canvas,
-        0,
-        0,
-        output.width,
-        output.height
-      );
-
-      const blob =
-        await new Promise((resolve,reject)=>
-          output.toBlob(
-            value =>
-              value
-                ? resolve(value)
-                : reject(new Error("Não foi possível criar a imagem PNG.")),
-            "image/png"
+      const canvas = await html2canvas(
+        sheet,
+        {
+          backgroundColor: "#fff",
+          scale: scale,
+          useCORS: true,
+          allowTaint: false,
+          imageTimeout: 30000,
+          logging: false,
+          scrollX: 0,
+          scrollY: 0,
+          width: Math.ceil(rect.width),
+          height: Math.ceil(rect.height),
+          windowWidth: Math.max(
+            document.documentElement.clientWidth,
+            Math.ceil(rect.right)
+          ),
+          windowHeight: Math.max(
+            document.documentElement.clientHeight,
+            Math.ceil(rect.bottom)
           )
-        );
-
-      const url =
-        URL.createObjectURL(blob);
-
-      const a =
-        document.createElement("a");
-
-      a.href = url;
-      a.download = "QR-produtos-previsualizacao.png";
-
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-
-      setTimeout(
-        () => URL.revokeObjectURL(url),
-        2000
+        }
       );
+
+      canvas.toBlob(function(blob){
+
+        if(!blob){
+          alert("Não foi possível criar a imagem.");
+          return;
+        }
+
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+
+        a.href = url;
+        a.download = "QR-produtos-previsualizacao.png";
+
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+
+        setTimeout(function(){
+          URL.revokeObjectURL(url);
+        },2000);
+
+      }, "image/png");
 
     }catch(error){
 
       console.error(error);
-
       alert(
-        "Não foi possível exportar a pré-visualização como imagem.\\n\\n" +
-        (error?.message || error)
+        "Não foi possível criar a imagem. Tenta novamente com menos produtos selecionados."
       );
-
-    }finally{
-
-      if(button){
-        button.disabled = false;
-        button.textContent = originalText;
-      }
 
     }
 
-  };
-
-  run();
+  });
 
 }
+
 
 $("exportImage").onclick = exportQRImage;
 
