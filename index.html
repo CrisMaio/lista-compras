@@ -3273,9 +3273,9 @@ function exportQRImage(){
         '" height="' +
         qr +
         '" preserveAspectRatio="xMidYMid meet" href="' +
-        item.image +
+        escapeXml(item.image) +
         '" xlink:href="' +
-        item.image +
+        escapeXml(item.image) +
         '"/>';
 
       let textY = y + qr + 1.5 + fontMm;
