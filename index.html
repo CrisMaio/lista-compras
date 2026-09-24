@@ -1959,7 +1959,6 @@ function createQREditorHTML(){
   });
 
   const cards = groups.map(group=>{
-    const heading=`<div class="date-heading">${escapeHtml(group.dateKey)}</div>`;
     const groupCards=group.entries.map(([id,p])=>{
       const url=qrUrl(id);
       const image=`https://quickchart.io/qr?size=700&text=${encodeURIComponent(url)}`;
@@ -1970,7 +1969,7 @@ function createQREditorHTML(){
             <div class="qr-sector">${escapeHtml(p.sector || "❗Outros")}</div>
           </div>`;
     }).join("");
-    return heading + groupCards;
+    return groupCards;
   }).join("");
 
 
@@ -2300,15 +2299,6 @@ body{
 
 }
 
-.date-heading{
-  grid-column:1 / -1;
-  font-weight:bold;
-  font-size:10pt;
-  padding:2mm 0 1mm;
-  border-bottom:0.3mm solid #999;
-  break-after:avoid;
-  page-break-after:avoid;
-}
 
 .qr-card{
 
