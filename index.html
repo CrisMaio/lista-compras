@@ -3177,156 +3177,81 @@ function exportQRImage(){
     return;
   }
 
-  const loadHtml2Canvas = () => {
+  updateLayout();
 
-    if(window.html2canvas){
-      return Promise.resolve(window.html2canvas);
-    }
+  const rect = sheet.getBoundingClientRect();
+  const widthPx = Math.max(1, Math.round(rect.width));
+  const heightPx = Math.max(1, Math.round(rect.height));
+  const widthMm = Math.max(1, Number(paperWidth.value) || 50);
+  const heightMm = widthMm * heightPx / widthPx;
 
-    return new Promise((resolve,reject) => {
+  const clone = sheet.cloneNode(true);
+  clone.style.margin = "0";
+  clone.style.width = widthPx + "px";
+  clone.style.minHeight = heightPx + "px";
+  clone.style.boxShadow = "none";
 
-      const script =
-        document.createElement("script");
+  const computedRoot =
+    getComputedStyle(document.documentElement);
 
-      script.src =
-        "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
+  const vars = [
+    "--paper-width",
+    "--qr-size",
+    "--columns",
+    "--gap",
+    "--side-margin",
+    "--name-size",
+    "--sector-size"
+  ];
 
-      script.async = true;
+  const varStyle = vars.map(
+    name => name + ":" + computedRoot.getPropertyValue(name) + ";"
+  ).join("");
 
-      script.onload = () => {
+  const styles = Array.from(
+    document.querySelectorAll("style")
+  ).map(
+    style => style.textContent || ""
+  ).join("\n");
 
-        if(window.html2canvas){
-          resolve(window.html2canvas);
-        }else{
-          reject(
-            new Error(
-              "A biblioteca de exportação não ficou disponível."
-            )
-          );
-        }
+  const serialized =
+    new XMLSerializer().serializeToString(clone);
 
-      };
+  const svg =
+    '<?xml version="1.0" encoding="UTF-8"?>' +
+    '<svg xmlns="http://www.w3.org/2000/svg" ' +
+    'xmlns:xhtml="http://www.w3.org/1999/xhtml" ' +
+    'width="' + widthMm + 'mm" ' +
+    'height="' + heightMm.toFixed(3) + 'mm" ' +
+    'viewBox="0 0 ' + widthPx + ' ' + heightPx + '">' +
+    '<rect x="0" y="0" width="100%" height="100%" fill="white"/>' +
+    '<foreignObject x="0" y="0" width="' + widthPx + '" height="' + heightPx + '">' +
+    '<div xmlns="http://www.w3.org/1999/xhtml" ' +
+    'style="width:' + widthPx + 'px;height:' + heightPx + 'px;' + varStyle + '">' +
+    '<style>' + styles + '</style>' +
+    serialized +
+    '</div>' +
+    '</foreignObject>' +
+    '</svg>';
 
-      script.onerror = () =>
-        reject(
-          new Error(
-            "Não foi possível carregar a biblioteca de exportação."
-          )
-        );
+  const blob = new Blob(
+    [svg],
+    {type:"image/svg+xml;charset=utf-8"}
+  );
 
-      document.head.appendChild(script);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
 
-    });
+  a.href = url;
+  a.download = "QR-produtos-previsualizacao.svg";
 
-  };
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
 
-
-  const waitForImages = () =>
-    Promise.all(
-      Array.from(
-        sheet.querySelectorAll("img")
-      ).map(img => {
-
-        if(img.complete && img.naturalWidth > 0){
-          return Promise.resolve();
-        }
-
-        return new Promise(resolve => {
-
-          const done = () => {
-            img.removeEventListener("load",done);
-            img.removeEventListener("error",done);
-            resolve();
-          };
-
-          img.addEventListener("load",done,{once:true});
-          img.addEventListener("error",done,{once:true});
-
-        });
-
-      })
-    );
-
-
-  const button = $("exportImage");
-  const oldText = button.textContent;
-
-  button.disabled = true;
-  button.textContent = "⏳ A criar imagem...";
-
-
-  loadHtml2Canvas()
-    .then(html2canvas => waitForImages().then(() => html2canvas))
-    .then(html2canvas => {
-
-      updateLayout();
-
-      return html2canvas(
-        sheet,
-        {
-          backgroundColor: "#ffffff",
-          scale: 4,
-          useCORS: true,
-          allowTaint: false,
-          imageTimeout: 20000,
-          logging: false,
-          removeContainer: true,
-          scrollX: 0,
-          scrollY: 0
-        }
-      );
-
-    })
-    .then(canvas => {
-
-      canvas.toBlob(blob => {
-
-        if(!blob){
-          alert("Não foi possível criar a imagem.");
-          return;
-        }
-
-        const url =
-          URL.createObjectURL(blob);
-
-        const a =
-          document.createElement("a");
-
-        a.href = url;
-
-        a.download =
-          "QR-produtos-previsualizacao.png";
-
-        document.body.appendChild(a);
-
-        a.click();
-
-        a.remove();
-
-        setTimeout(
-          () => URL.revokeObjectURL(url),
-          1000
-        );
-
-      },"image/png");
-
-    })
-    .catch(error => {
-
-      console.error(error);
-
-      alert(
-        "Não foi possível exportar a pré-visualização como imagem.\n\n" +
-        (error.message || error)
-      );
-
-    })
-    .finally(() => {
-
-      button.disabled = false;
-      button.textContent = oldText;
-
-    });
+  setTimeout(function(){
+    URL.revokeObjectURL(url);
+  },1000);
 
 }
 
