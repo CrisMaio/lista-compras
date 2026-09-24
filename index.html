@@ -3177,11 +3177,12 @@ function exportQRImage(){
   const textLineHeight = Math.max(3.2, fontMm * 1.25);
   const maxChars = Math.max(8, Math.floor(cardWidth / (fontMm * 0.48)));
 
-  const wrapText = text => {
+  const wrapText = function(text){
     const words = String(text || "").trim().split(/\s+/).filter(Boolean);
     const lines = [];
     let line = "";
-    words.forEach(word => {
+
+    words.forEach(function(word){
       const candidate = line ? line + " " + word : word;
       if(candidate.length > maxChars && line){
         lines.push(line);
@@ -3190,11 +3191,14 @@ function exportQRImage(){
         line = candidate;
       }
     });
-    if(line || !lines.length) lines.push(line);
+
+    if(line || !lines.length)
+      lines.push(line);
+
     return lines;
   };
 
-  const prepared = visibleCards.map(card => {
+  const prepared = visibleCards.map(function(card){
     const name = card.querySelector(".qr-name")?.textContent.trim() || "";
     const sector = card.querySelector(".qr-sector")?.textContent.trim() || "";
     const id = card.dataset.id;
@@ -3202,49 +3206,129 @@ function exportQRImage(){
     const image = "https://quickchart.io/qr?size=700&text=" + encodeURIComponent(url);
     const nameLines = wrapText(name);
     const height = qr + 1.5 + nameLines.length * textLineHeight + sectorMm + 2;
-    return {name, sector, image, nameLines, height};
+
+    return {
+      name: name,
+      sector: sector,
+      image: image,
+      nameLines: nameLines,
+      height: height
+    };
   });
 
   const rowHeights = [];
+
   for(let i=0; i<prepared.length; i+=cols){
-    rowHeights.push(Math.max(...prepared.slice(i,i+cols).map(item => item.height)));
+    rowHeights.push(
+      Math.max.apply(
+        Math,
+        prepared.slice(i,i+cols).map(function(item){
+          return item.height;
+        })
+      )
+    );
   }
 
-  const totalHeight = margin * 2 + rowHeights.reduce((sum,h)=>sum+h,0) + spacing * Math.max(0,rowHeights.length-1);
+  const totalHeight =
+    margin * 2 +
+    rowHeights.reduce(function(sum,h){ return sum + h; },0) +
+    spacing * Math.max(0,rowHeights.length-1);
+
   let y = margin;
-  let svg = `<?xml version="1.0" encoding="UTF-8"?>\n`;
-  svg += `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${width}mm" height="${totalHeight}mm" viewBox="0 0 ${width} ${totalHeight}">`;
-  svg += `<rect width="100%" height="100%" fill="white"/>`;
+
+  let svg =
+    '<?xml version="1.0" encoding="UTF-8"?>\n' +
+    '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="' +
+    width +
+    'mm" height="' +
+    totalHeight +
+    'mm" viewBox="0 0 ' +
+    width +
+    ' ' +
+    totalHeight +
+    '">';
+
+  svg += '<rect width="100%" height="100%" fill="white"/>';
 
   let index = 0;
-  rowHeights.forEach(rowHeight => {
+
+  rowHeights.forEach(function(rowHeight){
+
     for(let col=0; col<cols && index<prepared.length; col++,index++){
+
       const item = prepared[index];
       const x = margin + col * (cardWidth + spacing);
       const center = x + cardWidth / 2;
-      svg += `<image x="${x + (cardWidth-qr)/2}" y="${y}" width="${qr}" height="${qr}" preserveAspectRatio="xMidYMid meet" href="${item.image}" xlink:href="${item.image}"/>`;
+
+      svg +=
+        '<image x="' +
+        (x + (cardWidth-qr)/2) +
+        '" y="' +
+        y +
+        '" width="' +
+        qr +
+        '" height="' +
+        qr +
+        '" preserveAspectRatio="xMidYMid meet" href="' +
+        item.image +
+        '" xlink:href="' +
+        item.image +
+        '"/>';
+
       let textY = y + qr + 1.5 + fontMm;
-      item.nameLines.forEach(line => {
-        svg += `<text x="${center}" y="${textY}" text-anchor="middle" font-family="Arial, sans-serif" font-size="${fontMm}mm" font-weight="bold">${escapeXml(line)}</text>`;
+
+      item.nameLines.forEach(function(line){
+        svg +=
+          '<text x="' +
+          center +
+          '" y="' +
+          textY +
+          '" text-anchor="middle" font-family="Arial, sans-serif" font-size="' +
+          fontMm +
+          'mm" font-weight="bold">' +
+          escapeXml(line) +
+          '</text>';
+
         textY += textLineHeight;
       });
+
       if(showSector.checked){
-        svg += `<text x="${center}" y="${textY+0.5}" text-anchor="middle" font-family="Arial, sans-serif" font-size="3mm" fill="#666">${escapeXml(item.sector)}</text>`;
+        svg +=
+          '<text x="' +
+          center +
+          '" y="' +
+          (textY + 0.5) +
+          '" text-anchor="middle" font-family="Arial, sans-serif" font-size="3mm" fill="#666">' +
+          escapeXml(item.sector) +
+          '</text>';
       }
+
     }
+
     y += rowHeight + spacing;
+
   });
 
-  svg += `</svg>`;
-  const blob = new Blob([svg], {type:"image/svg+xml;charset=utf-8"});
+  svg += '</svg>';
+
+  const blob = new Blob(
+    [svg],
+    {type:"image/svg+xml;charset=utf-8"}
+  );
+
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
+
   a.href = url;
   a.download = "QR-produtos.svg";
+
   document.body.appendChild(a);
   a.click();
   a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+  setTimeout(function(){
+    URL.revokeObjectURL(url);
+  },1000);
 
 }
 
