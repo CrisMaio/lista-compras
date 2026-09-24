@@ -2728,6 +2728,10 @@ const root =
   document.documentElement;
 
 
+const $ =
+  id => document.getElementById(id);
+
+
 const paperWidth =
   document.getElementById(
     "paperWidth"
@@ -3201,9 +3205,8 @@ function exportQRImage(){
   const prepared = visibleCards.map(function(card){
     const name = card.querySelector(".qr-name")?.textContent.trim() || "";
     const sector = card.querySelector(".qr-sector")?.textContent.trim() || "";
-    const id = card.dataset.id;
-    const url = qrUrl(id);
-    const image = "https://quickchart.io/qr?size=700&text=" + encodeURIComponent(url);
+    const qrImage = card.querySelector(".qr-image");
+    const image = qrImage ? qrImage.getAttribute("src") : "";
     const nameLines = wrapText(name);
     const height = qr + 1.5 + nameLines.length * textLineHeight + sectorMm + 2;
 
