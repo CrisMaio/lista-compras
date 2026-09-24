@@ -369,6 +369,13 @@ dialog::backdrop{
       </button>
 
       <button
+        id="manageCategories"
+        type="button"
+      >
+        🗑️ Categorias
+      </button>
+
+      <button
         id="createProduct"
         class="primary"
       >
@@ -613,7 +620,7 @@ function renderList(data){
     const sector =
       product?.sector ||
       item.sector ||
-      "Outros";
+      "❗Outros";
 
     if(!bySector[sector])
       bySector[sector] = [];
@@ -987,7 +994,7 @@ function showProductSuggestions(){
         </strong>
         <span class="suggestionSector">
           ${escapeHtml(
-            p.sector || "Outros"
+            p.sector || "❗Outros"
           )}
         </span>`;
 
@@ -998,7 +1005,7 @@ function showProductSuggestions(){
           await addShopping(
             p.name,
             id,
-            p.sector || "Outros"
+            p.sector || "❗Outros"
           );
 
           $("manualName").value = "";
@@ -1081,7 +1088,7 @@ $("manualAdd").onclick =
         exact[1].name,
         exact[0],
         exact[1].sector ||
-        "Outros"
+        "❗Outros"
       );
 
     }else{
@@ -1196,7 +1203,7 @@ function renderProducts(data){
 
     meta.textContent =
       p.sector ||
-      "Outros";
+      "❗Outros";
 
 
     info.append(
@@ -1329,8 +1336,14 @@ const DEFAULT_CATEGORIES = [
   "🥛 Lacticínios e Ovos", "❄️ Congelados", "🥤 Bebidas",
   "🥖 Padaria e Pastelaria", "🧴 Higiene e Estética", "🧹 Limpeza da Casa",
   "🐕 Animais", "🍪 Snacks e Bolachas", "🏠 Casa e Bazar", "🧀 Charcutaria",
-  "💊 Saúde e Bem-estar", "Outros"
+  "💊 Saúde e Bem-estar", "❗Outros"
 ];
+
+function categorySortKey(value){
+  return String(value || "")
+    .replace(/^[\p{Extended_Pictographic}\p{Emoji_Presentation}\s]+/u, "")
+    .trim();
+}
 
 function getCategories(){
   const names = new Set(DEFAULT_CATEGORIES);
@@ -1342,7 +1355,9 @@ function getCategories(){
     const n = String(p?.sector || "").trim();
     if(n) names.add(n);
   });
-  return [...names].sort((a,b)=>a.localeCompare(b,"pt",{sensitivity:"base"}));
+  return [...names].sort((a,b) =>
+    categorySortKey(a).localeCompare(categorySortKey(b), "pt", {sensitivity:"base"})
+  );
 }
 
 function renderCategoryOptions(selected="Outros"){
@@ -1350,12 +1365,14 @@ function renderCategoryOptions(selected="Outros"){
   if(!select) return;
   const cats=getCategories();
   select.innerHTML=cats.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
-  select.value=cats.includes(selected) ? selected : "Outros";
+  select.value=cats.includes(selected) ? selected : "❗Outros";
 }
 
 async function saveCategory(name){
   const clean=String(name||"").trim();
   if(!clean || !currentUser) return null;
+  const existing=getCategories().find(c=>categorySortKey(c).toLocaleLowerCase("pt-PT")===categorySortKey(clean).toLocaleLowerCase("pt-PT"));
+  if(existing) return existing;
   const id=safeId(clean);
   await set(ref(db,`users/${currentUser.uid}/categories/${id}`),clean);
   return clean;
@@ -1363,12 +1380,88 @@ async function saveCategory(name){
 
 async function createCategory(){
   const name=prompt("Nome da nova categoria:");
-  if(name===null) return;
+  if(name===null) return null;
   const saved=await saveCategory(name);
   if(saved) renderCategoryOptions(saved);
+  return saved;
 }
 
 $("newCategory").onclick=createCategory;
+
+async function deleteCategory(name){
+  const clean=String(name||"").trim();
+  if(!clean || !currentUser) return false;
+
+  if(DEFAULT_CATEGORIES.includes(clean)){
+    alert("As categorias predefinidas não podem ser apagadas.");
+    return false;
+  }
+
+  const used=Object.values(window.__productsData || {}).some(p => String(p?.sector || "").trim()===clean);
+  if(used){
+    alert(`A categoria "${clean}" está a ser usada por um ou mais produtos. Altera primeiro a categoria desses produtos.`);
+    return false;
+  }
+
+  if(!confirm(`Apagar a categoria "${clean}"?`)) return false;
+
+  const id=safeId(clean);
+  await remove(ref(db,`users/${currentUser.uid}/categories/${id}`));
+  return true;
+}
+
+async function manageCategories(){
+  const categories=Object.values(window.__categoriesData || {})
+    .map(v=>String(v||"").trim())
+    .filter(Boolean)
+    .sort((a,b)=>categorySortKey(a).localeCompare(categorySortKey(b),"pt",{sensitivity:"base"}));
+
+  const dialog=document.createElement("dialog");
+  dialog.innerHTML=`
+    <div style="min-width:min(430px,80vw)">
+      <h3 style="margin-top:0">Categorias criadas</h3>
+      <p class="muted">As categorias predefinidas ficam disponíveis e não são apagadas. Aqui podes apagar as categorias que criaste.</p>
+      <div id="categoryManageList" style="display:grid;gap:8px"></div>
+      <div class="row" style="justify-content:flex-end;margin-top:16px">
+        <button id="closeCategoryManage">Fechar</button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(dialog);
+  const list=dialog.querySelector("#categoryManageList");
+
+  if(!categories.length){
+    list.innerHTML=`<p class="muted">Não existem categorias criadas por ti.</p>`;
+  }else{
+    categories.forEach(category=>{
+      const row=document.createElement("div");
+      row.className="row";
+      row.style.justifyContent="space-between";
+      const label=document.createElement("span");
+      label.textContent=category;
+      const del=document.createElement("button");
+      del.className="small danger";
+      del.textContent="🗑️ Apagar";
+      del.onclick=async()=>{
+        const deleted=await deleteCategory(category);
+        if(!deleted || !window.__categoriesData) return;
+        const key=safeId(category);
+        delete window.__categoriesData[key];
+        renderCategoryOptions($("productSector").value || "❗Outros");
+        row.remove();
+        if(!list.children.length) list.innerHTML=`<p class="muted">Não existem categorias criadas por ti.</p>`;
+      };
+      row.append(label,del);
+      list.appendChild(row);
+    });
+  }
+
+  dialog.querySelector("#closeCategoryManage").onclick=()=>dialog.close();
+  dialog.onclose=()=>dialog.remove();
+  dialog.showModal();
+}
+
+$("manageCategories").onclick=manageCategories;
 
 async function createProduct(){
 
@@ -1435,58 +1528,58 @@ async function editProduct(
   product
 ){
 
-  const newName =
-    prompt(
-      "Nome do produto:",
-      product.name
-    );
+  const dialog=document.createElement("dialog");
+  dialog.innerHTML=`
+    <form method="dialog" style="min-width:min(430px,80vw)">
+      <h3 style="margin-top:0">Editar produto</h3>
 
-  if(newName === null)
-    return;
+      <label style="display:block;margin-bottom:6px;font-weight:bold">Designação</label>
+      <input id="editProductName" style="width:100%;box-sizing:border-box" value="${escapeHtml(product.name)}">
 
+      <label style="display:block;margin:14px 0 6px;font-weight:bold">Categoria</label>
+      <div class="row">
+        <select id="editProductCategory" style="flex:1"></select>
+        <button id="editNewCategory" type="button">➕ Nova</button>
+      </div>
 
-  const name =
-    newName.trim();
+      <div class="row" style="justify-content:flex-end;margin-top:18px">
+        <button id="editCancel" type="button">Cancelar</button>
+        <button id="editSave" class="primary" type="button">Guardar</button>
+      </div>
+    </form>`;
 
-  if(!name)
-    return;
+  document.body.appendChild(dialog);
 
+  const select=dialog.querySelector("#editProductCategory");
+  const fill=selected=>{
+    const cats=getCategories();
+    select.innerHTML=cats.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
+    select.value=cats.includes(selected) ? selected : "❗Outros";
+  };
+  fill(product.sector || "❗Outros");
 
-  const categories=getCategories();
-  const menu =
-    "Classificar o produto:\n\n" +
-    categories.map((c,i)=>`${i+1}. ${c}`).join("\n") +
-    "\n\n0. ➕ Criar nova categoria";
+  dialog.querySelector("#editNewCategory").onclick=async()=>{
+    const saved=await createCategory();
+    if(saved) fill(saved);
+  };
 
-  const choice=prompt(
-    menu,
-    String(Math.max(1,categories.indexOf(product.sector || "Outros")+1))
-  );
-  if(choice===null) return;
+  dialog.querySelector("#editCancel").onclick=()=>dialog.close();
 
-  let sector="Outros";
-  const n=Number(choice);
-  if(n===0){
-    sector=await saveCategory(prompt("Nome da nova categoria:")) || "Outros";
-  }else if(Number.isInteger(n) && n>=1 && n<=categories.length){
-    sector=categories[n-1];
-  }else{
-    alert("Escolhe o número de uma categoria válida.");
-    return;
-  }
-
-
-  await update(
-    ref(
-      db,
-      `users/${currentUser.uid}/products/${id}`
-    ),
-    {
-      name,
-      sector
+  dialog.querySelector("#editSave").onclick=async()=>{
+    const name=dialog.querySelector("#editProductName").value.trim();
+    if(!name){
+      alert("Indica a designação do produto.");
+      return;
     }
-  );
+    await update(
+      ref(db,`users/${currentUser.uid}/products/${id}`),
+      {name,sector:select.value}
+    );
+    dialog.close();
+  };
 
+  dialog.onclose=()=>dialog.remove();
+  dialog.showModal();
 }
 
 
@@ -1693,7 +1786,7 @@ function printableListHtml(){
     const sector =
       product?.sector ||
       item.sector ||
-      "Outros";
+      "❗Outros";
 
 
     if(!groups[sector])
@@ -1851,51 +1944,34 @@ function createQREditorHTML(){
       });
 
 
-  const cards =
-    entries.map(
-      ([id,p]) => {
+  const groups = [];
+  const groupMap = new Map();
 
-        const url =
-          qrUrl(id);
+  entries.forEach(([id,p])=>{
+    const timestamp=Number(p?.createdAt || 0);
+    const dateKey=timestamp ? new Date(timestamp).toLocaleDateString("pt-PT") : "Data não registada";
+    if(!groupMap.has(dateKey)){
+      const group={dateKey,timestamp,entries:[]};
+      groupMap.set(dateKey,group);
+      groups.push(group);
+    }
+    groupMap.get(dateKey).entries.push([id,p]);
+  });
 
-        const image =
-          `https://quickchart.io/qr?size=700&text=${encodeURIComponent(url)}`;
-
-
-        return `
-
-          <div
-            class="qr-card"
-            data-id="${escapeHtml(id)}"
-          >
-
-            <img
-              class="qr-image"
-              src="${image}"
-              alt=""
-            >
-
-            <div
-              class="qr-name"
-              contenteditable="true"
-              spellcheck="false"
-            >
-              ${escapeHtml(p.name)}
-            </div>
-
-            <div class="qr-sector">
-              ${escapeHtml(
-                p.sector || "Outros"
-              )}
-            </div>
-
-          </div>
-
-        `;
-
-      }
-    )
-    .join("");
+  const cards = groups.map(group=>{
+    const heading=`<div class="date-heading">${escapeHtml(group.dateKey)}</div>`;
+    const groupCards=group.entries.map(([id,p])=>{
+      const url=qrUrl(id);
+      const image=`https://quickchart.io/qr?size=700&text=${encodeURIComponent(url)}`;
+      return `
+          <div class="qr-card" data-id="${escapeHtml(id)}">
+            <img class="qr-image" src="${image}" alt="">
+            <div class="qr-name" contenteditable="true" spellcheck="false">${escapeHtml(p.name)}</div>
+            <div class="qr-sector">${escapeHtml(p.sector || "❗Outros")}</div>
+          </div>`;
+    }).join("");
+    return heading + groupCards;
+  }).join("");
 
 
   const productSelector =
@@ -1918,7 +1994,7 @@ function createQREditorHTML(){
             ${escapeHtml(p.name)}
             <small>
               ${escapeHtml(
-                p.sector || "Outros"
+                p.sector || "❗Outros"
               )}
             </small>
           </span>
@@ -2197,6 +2273,15 @@ body{
 
 }
 
+.date-heading{
+  grid-column:1 / -1;
+  font-weight:bold;
+  font-size:10pt;
+  padding:2mm 0 1mm;
+  border-bottom:0.3mm solid #999;
+  break-after:avoid;
+  page-break-after:avoid;
+}
 
 .qr-card{
 
@@ -3238,7 +3323,7 @@ async function processQR(){
       product.name,
       id,
       product.sector ||
-      "Outros"
+      "❗Outros"
     );
 
 
@@ -3376,7 +3461,7 @@ onAuthStateChanged(
         ),
         snap => {
           window.__categoriesData = snap.val() || {};
-          renderCategoryOptions($("productSector").value || "Outros");
+          renderCategoryOptions($("productSector").value || "❗Outros");
         }
       );
 
