@@ -3183,15 +3183,16 @@ function exportQRImage(){
   const widthPx = Math.max(1, Math.round(rect.width));
   const heightPx = Math.max(1, Math.round(rect.height));
   const widthMm = Math.max(1, Number(paperWidth.value) || 50);
-  const heightMm = widthMm * heightPx / widthPx;
+  const heightMm = Math.max(1, widthMm * heightPx / widthPx);
 
   const clone = sheet.cloneNode(true);
+
   clone.style.margin = "0";
   clone.style.width = widthPx + "px";
   clone.style.minHeight = heightPx + "px";
   clone.style.boxShadow = "none";
 
-  const computedRoot =
+  const rootStyle =
     getComputedStyle(document.documentElement);
 
   const vars = [
@@ -3204,15 +3205,27 @@ function exportQRImage(){
     "--sector-size"
   ];
 
-  const varStyle = vars.map(
-    name => name + ":" + computedRoot.getPropertyValue(name) + ";"
-  ).join("");
+  let variableStyle = "";
 
-  const styles = Array.from(
-    document.querySelectorAll("style")
-  ).map(
-    style => style.textContent || ""
-  ).join("\n");
+  vars.forEach(function(name){
+    variableStyle +=
+      name + ":" +
+      rootStyle.getPropertyValue(name) +
+      ";";
+  });
+
+  const styles =
+    Array.from(document.querySelectorAll("style"))
+      .map(function(style){
+        return style.textContent || "";
+      })
+      .join("\n");
+
+  const safeStyles =
+    styles
+      .replace(/&/g,"&amp;")
+      .replace(/</g,"&lt;")
+      .replace(/>/g,"&gt;");
 
   const serialized =
     new XMLSerializer().serializeToString(clone);
@@ -3227,8 +3240,8 @@ function exportQRImage(){
     '<rect x="0" y="0" width="100%" height="100%" fill="white"/>' +
     '<foreignObject x="0" y="0" width="' + widthPx + '" height="' + heightPx + '">' +
     '<div xmlns="http://www.w3.org/1999/xhtml" ' +
-    'style="width:' + widthPx + 'px;height:' + heightPx + 'px;' + varStyle + '">' +
-    '<style>' + styles + '</style>' +
+    'style="width:' + widthPx + 'px;height:' + heightPx + 'px;' + variableStyle + '">' +
+    '<style>' + safeStyles + '</style>' +
     serialized +
     '</div>' +
     '</foreignObject>' +
@@ -3254,7 +3267,6 @@ function exportQRImage(){
   },1000);
 
 }
-
 
 $("exportImage").onclick = exportQRImage;
 
