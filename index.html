@@ -338,7 +338,28 @@ dialog::backdrop{
         placeholder="Ex.: Leite"
       >
 
-      <select id="productSector"></select>
+      <select
+        id="productSector"
+      >
+        <option value="🥫 Mercearia">🥫 Mercearia</option>
+        <option value="🥦 Frutas e Legumes">
+          🥦 Frutas e Legumes
+        </option>
+        <option value="🥩 Talho">🥩 Talho</option>
+        <option value="🐟 Peixaria">🐟 Peixaria</option>
+        <option value="🥛 Lacticínios e Ovos">🥛 Lacticínios e Ovos</option>
+        <option value="❄️ Congelados">❄️ Congelados</option>
+        <option value="🥤 Bebidas">🥤 Bebidas</option>
+        <option value="🥖 Padaria e Pastelaria">🥖 Padaria e Pastelaria</option>
+        <option value="🧴 Higiene e Estética">🧴 Higiene e Estética</option>
+        <option value="🧹 Limpeza da Casa">🧹 Limpeza da Casa</option>
+        <option value="🐕 Animais">🐕 Animais</option>
+        <option value="🍪 Snacks e Bolachas">🍪 Snacks e Bolachas</option>
+        <option value="🏠 Casa e Bazar">🏠 Casa e Bazar</option>
+        <option value="🧀 Charcutaria">🧀 Charcutaria</option>
+        <option value="💊 Saúde e Bem-estar">💊 Saúde e Bem-estar</option>
+        <option value="Outros">Outros</option>
+      </select>
 
       <button
         id="newCategory"
@@ -1103,110 +1124,6 @@ document.addEventListener(
 );
 
 
-
-/* =========================
-   CATEGORIAS
-========================= */
-
-const DEFAULT_CATEGORIES = [
-  "🥫 Mercearia",
-  "🥦 Frutas e Legumes",
-  "🥩 Talho",
-  "🐟 Peixaria",
-  "🥛 Lacticínios e Ovos",
-  "❄️ Congelados",
-  "🥤 Bebidas",
-  "🥖 Padaria e Pastelaria",
-  "🧴 Higiene e Estética",
-  "🧹 Limpeza da Casa",
-  "🐕 Animais",
-  "🍪 Snacks e Bolachas",
-  "🏠 Casa e Bazar",
-  "🧀 Charcutaria",
-  "💊 Saúde e Bem-estar",
-  "Outros"
-];
-
-function getCategories(){
-  const saved = window.__categoriesData || {};
-  const names = new Set();
-
-  Object.keys(saved).forEach(k => {
-    if(String(saved[k] || "").trim()) names.add(String(saved[k]).trim());
-  });
-
-  Object.values(window.__productsData || {}).forEach(p => {
-    const c = String(p?.sector || "").trim();
-    if(c) names.add(c);
-  });
-
-  DEFAULT_CATEGORIES.forEach(c => names.add(c));
-
-  return Array.from(names).sort((a,b) => a.localeCompare(b,"pt",{sensitivity:"base"}));
-}
-
-function categoryId(name){
-  return safeId(name) || "categoria";
-}
-
-function renderCategoryOptions(selectId, selectedValue = "Outros"){
-  const select = $(selectId);
-  if(!select) return;
-
-  const categories = getCategories();
-  select.innerHTML = categories.map(c =>
-    `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`
-  ).join("");
-
-  if(categories.includes(selectedValue)){
-    select.value = selectedValue;
-  }else{
-    const option = document.createElement("option");
-    option.value = selectedValue;
-    option.textContent = selectedValue;
-    select.appendChild(option);
-    select.value = selectedValue;
-  }
-}
-
-async function saveCategory(name){
-  const clean = String(name || "").trim();
-  if(!clean || !currentUser) return null;
-
-  const existing = getCategories().find(c => normalizeSearch(c) === normalizeSearch(clean));
-  if(existing) return existing;
-
-  await set(
-    ref(db, `users/${currentUser.uid}/categories/${categoryId(clean)}`),
-    clean
-  );
-
-  return clean;
-}
-
-async function createCategoryFromUI(selectId){
-  const name = prompt("Nome da nova categoria:");
-  if(name === null) return null;
-
-  const clean = name.trim();
-  if(!clean) return null;
-
-  const saved = await saveCategory(clean);
-  renderCategoryOptions(selectId, saved || clean);
-  return saved || clean;
-}
-
-function categorySelectHTML(id, selected){
-  const categories = getCategories();
-  return `
-    <select id="${id}">
-      ${categories.map(c =>
-        `<option value="${escapeHtml(c)}" ${normalizeSearch(c)===normalizeSearch(selected||"Outros") ? "selected" : ""}>${escapeHtml(c)}</option>`
-      ).join("")}
-    </select>
-  `;
-}
-
 /* =========================
    PRODUTOS
 ========================= */
@@ -1407,6 +1324,75 @@ $("productSearch").oninput =
     );
 
 
+const DEFAULT_CATEGORIES = [
+  "🥫 Mercearia",
+  "🥦 Frutas e Legumes",
+  "🥩 Talho",
+  "🐟 Peixaria",
+  "🥛 Lacticínios e Ovos",
+  "❄️ Congelados",
+  "🥤 Bebidas",
+  "🥖 Padaria e Pastelaria",
+  "🧴 Higiene e Estética",
+  "🧹 Limpeza da Casa",
+  "🐕 Animais",
+  "🍪 Snacks e Bolachas",
+  "🏠 Casa e Bazar",
+  "🧀 Charcutaria",
+  "💊 Saúde e Bem-estar",
+  "Outros"
+];
+
+function getCategories(){
+  const names = new Set(DEFAULT_CATEGORIES);
+  Object.values(window.__categoriesData || {}).forEach(v => {
+    const n = String(v || "").trim();
+    if(n) names.add(n);
+  });
+  Object.values(window.__productsData || {}).forEach(p => {
+    const n = String(p?.sector || "").trim();
+    if(n) names.add(n);
+  });
+  return Array.from(names).sort((a,b) =>
+    a.localeCompare(b,"pt",{sensitivity:"base"})
+  );
+}
+
+function renderCategoryOptions(selected){
+  const select = $("productSector");
+  if(!select) return;
+  const current = selected ?? select.value ?? "Outros";
+  select.innerHTML = getCategories()
+    .map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`)
+    .join("");
+  select.value = getCategories().includes(current) ? current : "Outros";
+}
+
+async function saveCategory(name){
+  name = String(name || "").trim();
+  if(!name) return null;
+  const id = safeId(name);
+  await set(ref(db, `users/${currentUser.uid}/categories/${id}`), name);
+  return name;
+}
+
+async function createCategory(){
+  const name = prompt("Nome da nova categoria:");
+  if(name === null) return;
+  const clean = name.trim();
+  if(!clean) return;
+  const saved = await saveCategory(clean);
+  renderCategoryOptions(saved);
+}
+
+if($("productSector")){
+  renderCategoryOptions("Outros");
+}
+
+// Botão de nova categoria, caso exista no HTML.
+if($("newCategory")) $("newCategory").onclick = createCategory;
+
+
 async function createProduct(){
 
   const name =
@@ -1435,12 +1421,6 @@ async function createProduct(){
   }
 
 
-  const sector =
-    $("productSector").value ||
-    "Outros";
-
-  await saveCategory(sector);
-
   await set(
     ref(
       db,
@@ -1448,7 +1428,8 @@ async function createProduct(){
     ),
     {
       name,
-      sector,
+      sector:
+        $("productSector").value,
       createdAt: Date.now()
     }
   );
@@ -1461,11 +1442,6 @@ async function createProduct(){
 
 $("createProduct").onclick =
   createProduct;
-
-$("newCategory").onclick =
-  () => createCategoryFromUI("productSector");
-
-renderCategoryOptions("productSector", "Outros");
 
 
 $("productName").onkeydown =
@@ -1482,85 +1458,78 @@ async function editProduct(
   product
 ){
 
-  const dialog = document.createElement("dialog");
-
-  dialog.innerHTML = `
-    <form method="dialog" style="min-width:min(420px,90vw)">
-      <h3 style="margin-top:0">Editar produto / QR</h3>
-
-      <label style="display:block;margin-bottom:10px">
-        <strong>Designação</strong><br>
-        <input id="editProductName" value="${escapeHtml(product.name)}" style="width:100%;margin-top:5px">
-      </label>
-
-      <label style="display:block;margin-bottom:6px">
-        <strong>Classificação / categoria</strong><br>
-        <select id="editProductSector" style="width:100%;margin-top:5px"></select>
-      </label>
-
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
-        <button id="editNewCategory" type="button">➕ Nova categoria</button>
-      </div>
-
-      <div style="display:flex;gap:8px;justify-content:flex-end">
-        <button id="cancelEdit" type="button">Cancelar</button>
-        <button id="saveEdit" class="primary" type="button">Guardar</button>
-      </div>
-    </form>
-  `;
-
-  document.body.appendChild(dialog);
-  renderCategoryOptions("editProductSector", product.sector || "Outros");
-  dialog.showModal();
-
-  dialog.querySelector("#editNewCategory").onclick = async () => {
-    const value = await createCategoryFromUI("editProductSector");
-    if(value) dialog.querySelector("#editProductSector").value = value;
-  };
-
-  dialog.querySelector("#cancelEdit").onclick = () => dialog.close();
-
-  dialog.querySelector("#saveEdit").onclick = async () => {
-    const name = dialog.querySelector("#editProductName").value.trim();
-    const sector = dialog.querySelector("#editProductSector").value.trim() || "Outros";
-
-    if(!name){
-      alert("Indica a designação do produto.");
-      return;
-    }
-
-    await saveCategory(sector);
-
-    await update(
-      ref(
-        db,
-        `users/${currentUser.uid}/products/${id}`
-      ),
-      {
-        name,
-        sector
-      }
+  const newName =
+    prompt(
+      "Nome do produto:",
+      product.name
     );
 
-    // Atualiza também os itens da lista que tenham o mesmo produto.
-    const shopping = window.__shoppingData || {};
-    for(const [shoppingId,item] of Object.entries(shopping)){
-      if(
-        shoppingId === id ||
-        normalizeSearch(item.name) === normalizeSearch(product.name)
-      ){
-        await update(
-          ref(db, `users/${currentUser.uid}/shopping/${shoppingId}`),
-          {name, sector}
-        );
-      }
+  if(newName === null)
+    return;
+
+  const name =
+    newName.trim();
+
+  if(!name)
+    return;
+
+  let categories = getCategories();
+
+  let menu =
+    "Classificar o produto:\n\n" +
+    categories
+      .map((c,i) => `${i + 1}. ${c}`)
+      .join("\n") +
+    "\n\n0. ➕ Criar nova categoria";
+
+  let choice = prompt(
+    menu,
+    String(
+      Math.max(
+        1,
+        categories.indexOf(product.sector || "Outros") + 1
+      )
+    )
+  );
+
+  if(choice === null)
+    return;
+
+  let sector = "Outros";
+  const number = Number(choice);
+
+  if(number === 0){
+    const created = prompt("Nome da nova categoria:");
+    if(created === null)
+      return;
+    const clean = created.trim();
+    if(!clean)
+      return;
+    sector = await saveCategory(clean) || "Outros";
+  }else if(
+    Number.isInteger(number) &&
+    number >= 1 &&
+    number <= categories.length
+  ){
+    sector = categories[number - 1];
+  }else{
+    alert("Escolhe o número de uma categoria válida.");
+    return;
+  }
+
+  await update(
+    ref(
+      db,
+      `users/${currentUser.uid}/products/${id}`
+    ),
+    {
+      name,
+      sector
     }
+  );
 
-    dialog.close();
-  };
-
-  dialog.addEventListener("close", () => dialog.remove(), {once:true});
 }
+
 
 
 /* =========================
@@ -1920,11 +1889,12 @@ function createQREditorHTML(){
         const da = Number(a[1]?.createdAt || 0);
         const db = Number(b[1]?.createdAt || 0);
         if(db !== da) return db - da;
-        return String(a[1]?.name || "").localeCompare(
-          String(b[1]?.name || ""),
-          "pt",
-          {sensitivity:"base"}
-        );
+        return String(a[1]?.name || "")
+          .localeCompare(
+            String(b[1]?.name || ""),
+            "pt",
+            {sensitivity:"base"}
+          );
       });
 
 
@@ -3116,75 +3086,49 @@ document
   };
 
 
-function exportLabelsAsImage(){
-
-  const visibleCards =
-    cards.filter(card => card.style.display !== "none");
-
-  if(!visibleCards.length){
-    alert("Seleciona pelo menos um produto para exportar.");
-    return;
-  }
-
-  const widthMm = Number(paperWidth.value) || 50;
-  const marginMm = Number(sideMargin.value) || 1;
-  const gapMm = Number(gap.value) || 1;
-  const cols = Number(columns.value) || 1;
-  const qrMm = Number(qrSize.value) || 20;
-
-  const rows = Math.ceil(visibleCards.length / cols);
-  const cardWidth = Math.max(1, (widthMm - marginMm * 2 - gapMm * (cols - 1)) / cols);
-  const cardHeight = Math.max(qrMm + 12, qrMm + 10);
-  const heightMm = marginMm * 2 + rows * cardHeight + Math.max(0, rows - 1) * gapMm;
-
-  const escXml = value => String(value)
-    .replace(/&/g,"&amp;")
-    .replace(/</g,"&lt;")
-    .replace(/>/g,"&gt;")
-    .replace(/"/g,"&quot;")
-    .replace(/'/g,"&apos;");
-
-  const parts = [];
-  parts.push(`<?xml version="1.0" encoding="UTF-8"?>`);
-  parts.push(`<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${widthMm}mm" height="${heightMm}mm" viewBox="0 0 ${widthMm} ${heightMm}">`);
-  parts.push(`<rect width="100%" height="100%" fill="white"/>`);
-
-  visibleCards.forEach((card, index) => {
-    const row = Math.floor(index / cols);
-    const col = index % cols;
-    const x = marginMm + col * (cardWidth + gapMm) + (cardWidth - qrMm) / 2;
-    const y = marginMm + row * (cardHeight + gapMm);
-    const img = card.querySelector(".qr-image");
-    const name = card.querySelector(".qr-name")?.textContent.trim() || "";
-    const sector = card.querySelector(".qr-sector")?.textContent.trim() || "";
-
-    if(img){
-      parts.push(`<image x="${x}" y="${y}" width="${qrMm}" height="${qrMm}" preserveAspectRatio="none" href="${escXml(img.src)}" xlink:href="${escXml(img.src)}"/>`);
-    }
-
-    parts.push(`<text x="${widthMm/2 + col*(widthMm/cols) - widthMm/2}" y="${y + qrMm + 4}" text-anchor="middle" font-family="Arial,sans-serif" font-size="${Math.max(6, Number(nameSize.value)||10)}" font-weight="bold">${escXml(name)}</text>`);
-
-    if(showSector.checked && sector){
-      parts.push(`<text x="${widthMm/2 + col*(widthMm/cols) - widthMm/2}" y="${y + qrMm + 8}" text-anchor="middle" font-family="Arial,sans-serif" font-size="${Math.max(5, (Number(nameSize.value)||10)-2)}" fill="#666">${escXml(sector)}</text>`);
-    }
-  });
-
-  parts.push(`</svg>`);
-
-  const blob = new Blob([parts.join("\n")], {type:"image/svg+xml;charset=utf-8"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "etiquetas-QR.svg";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
 document
   .getElementById("downloadImage")
-  .onclick = exportLabelsAsImage;
+  .onclick = () => {
+    const visible = cards.filter(c => c.style.display !== "none");
+    if(!visible.length){
+      alert("Não há etiquetas selecionadas para exportar.");
+      return;
+    }
+    const widthMm = Number(paperWidth.value) || 50;
+    const qrMm = Number(qrSize.value) || 20;
+    const gapMm = Number(gap.value) || 1;
+    const marginMm = Number(sideMargin.value) || 1;
+    const cols = Number(columns.value) || 1;
+    const cellW = (widthMm - marginMm*2 - gapMm*(cols-1)) / cols;
+    const cellH = qrMm + 12;
+    const rows = Math.ceil(visible.length / cols);
+    const px = n => n * 3.7795275591;
+    const W = px(widthMm), H = px(rows*cellH + marginMm*2);
+    let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`;
+    visible.forEach((card,i) => {
+      const id = card.dataset.id;
+      const name = card.querySelector(".qr-name")?.textContent.trim() || "";
+      const sector = card.querySelector(".qr-sector")?.textContent.trim() || "";
+      const col = i % cols, row = Math.floor(i / cols);
+      const x = px(marginMm + col*(cellW+gapMm));
+      const y = px(marginMm + row*cellH);
+      const size = px(Math.min(qrMm, cellW));
+      const url = qrImageUrl(id,700);
+      svg += `<rect x="${x}" y="${y}" width="${px(cellW)}" height="${px(cellH)}" fill="white"/>`;
+      svg += `<image href="${url}" x="${x+(px(cellW)-size)/2}" y="${y}" width="${size}" height="${size}"/>`;
+      svg += `<text x="${x+px(cellW/2)}" y="${y+size+px(5)}" text-anchor="middle" font-family="Arial" font-size="${Number(nameSize.value)||10}" fill="black">${escapeXmlForSvg(name)}</text>`;
+      if(showSector.checked) svg += `<text x="${x+px(cellW/2)}" y="${y+size+px(9)}" text-anchor="middle" font-family="Arial" font-size="8" fill="#555">${escapeXmlForSvg(sector)}</text>`;
+    });
+    svg += `</svg>`;
+    const blob = new Blob([svg],{type:"image/svg+xml;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+    const a=document.createElement("a"); a.href=url; a.download="etiquetas-QR.svg"; a.click();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+  };
+
+function escapeXmlForSvg(value){
+  return String(value||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&apos;"}[c]));
+}
 
 
 const warning =
@@ -3446,8 +3390,6 @@ onAuthStateChanged(
       if(stopProducts)
         stopProducts();
 
-      if(stopCategories)
-        stopCategories();
 
       return;
 
@@ -3496,25 +3438,6 @@ onAuthStateChanged(
       );
 
 
-    stopCategories =
-      onValue(
-        ref(
-          db,
-          `users/${user.uid}/categories`
-        ),
-
-        snap => {
-          window.__categoriesData =
-            snap.val() || {};
-
-          renderCategoryOptions(
-            "productSector",
-            $("productSector")?.value || "Outros"
-          );
-        }
-      );
-
-
     stopProducts =
       onValue(
         ref(
@@ -3528,8 +3451,6 @@ onAuthStateChanged(
             snap.val() || {};
 
 
-          renderCategoryOptions("productSector", $("productSector")?.value || "Outros");
-
           renderProducts(
             window.__productsData
           );
@@ -3540,6 +3461,18 @@ onAuthStateChanged(
 
           processQR();
 
+        }
+      );
+
+    stopCategories =
+      onValue(
+        ref(
+          db,
+          `users/${user.uid}/categories`
+        ),
+        snap => {
+          window.__categoriesData = snap.val() || {};
+          renderCategoryOptions($("productSector")?.value || "Outros");
         }
       );
 
