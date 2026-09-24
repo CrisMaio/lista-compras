@@ -3182,7 +3182,7 @@ function exportQRImage(){
   const maxChars = Math.max(8, Math.floor(cardWidth / (fontMm * 0.48)));
 
   const wrapText = function(text){
-    const words = String(text || "").trim().split(/\s+/).filter(Boolean);
+    const words = String(text || "").trim().split(/\\s+/).filter(Boolean);
     const lines = [];
     let line = "";
 
@@ -3240,7 +3240,7 @@ function exportQRImage(){
   let y = margin;
 
   let svg =
-    '<?xml version="1.0" encoding="UTF-8"?>\n' +
+    '<?xml version="1.0" encoding="UTF-8"?>\\n' +
     '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="' +
     width +
     'mm" height="' +
