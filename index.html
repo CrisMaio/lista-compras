@@ -2041,7 +2041,7 @@ function createQREditorHTML(){
 
   --qr-size:20mm;
 
-  --columns:2;
+  --columns:1;
 
   --gap:1mm;
 
@@ -2287,28 +2287,36 @@ body{
 
   display:grid;
 
-  grid-template-columns:
-    repeat(
-      var(--columns),
-      minmax(0,1fr)
-    );
+  grid-template-columns:1fr;
 
   gap:var(--gap);
 
-  align-items:start;
+  align-items:stretch;
 
 }
 
 
 .qr-card{
 
-  text-align:center;
+  display:grid;
+
+  grid-template-columns:minmax(0,1fr) var(--qr-size);
+
+  grid-template-rows:auto auto;
+
+  column-gap:var(--gap);
+
+  align-items:center;
+
+  text-align:left;
 
   break-inside:avoid;
 
   page-break-inside:avoid;
 
   min-width:0;
+
+  min-height:var(--qr-size);
 
 }
 
@@ -2323,12 +2331,20 @@ body{
 
   display:block;
 
-  margin:0 auto 1.5mm;
+  grid-column:2;
+
+  grid-row:1 / span 2;
+
+  margin:0;
 
 }
 
 
 .qr-name{
+
+  grid-column:1;
+
+  grid-row:1;
 
   font-size:var(--name-size);
 
@@ -2338,7 +2354,7 @@ body{
 
   min-height:4mm;
 
-  padding:0.5mm;
+  padding:0.5mm 0;
 
   outline:none;
 
@@ -2355,6 +2371,10 @@ body{
 
 
 .qr-sector{
+
+  grid-column:1;
+
+  grid-row:2;
 
   font-size:var(--sector-size);
 
@@ -2520,15 +2540,9 @@ body{
 
     Colunas:
 
-    <select id="columns">
+    <select id="columns" disabled>
 
-      <option value="1">1</option>
-
-      <option value="2" selected>2</option>
-
-      <option value="3">3</option>
-
-      <option value="4">4</option>
+      <option value="1" selected>1</option>
 
     </select>
 
@@ -2700,13 +2714,13 @@ body{
 <div class="help">
 
   <strong>Papel contínuo:</strong>
-  50 mm por defeito, QR de 20 mm e 2 colunas.
-  A altura aumenta automaticamente conforme o número
-  de produtos.
+  50 mm por defeito, QR de 20 mm e 1 etiqueta por linha.
+  O texto fica à esquerda e o QR à direita. A altura aumenta
+  automaticamente conforme o número de produtos.
 
   <br><br>
 
-  Os nomes por baixo dos QR podem ser alterados
+  Os nomes à esquerda dos QR podem ser alterados
   diretamente nesta página sem alterar os produtos
   nem os identificadores dos QR.
 
